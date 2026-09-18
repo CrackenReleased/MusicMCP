@@ -1,6 +1,6 @@
 # Security
 
-Scope: experimental v0.1.0 reference core · 2026-09-18
+Scope: experimental v0.1.01 reference core · 2026-09-18
 
 ## Trust boundary
 
@@ -14,7 +14,11 @@ The core's immutable values and transactional publication protect normal API use
 
 Mutations must pass scope and constraint checks and publish complete validated revisions. Denied, stale, or invalid operations must leave authoritative state unchanged. Restore requires current authority and must preserve revision history; it is not a route around locks or grants. Human corrections cannot be silently displaced by new analysis. Original evidence and provenance must remain distinct from machine assertions.
 
-The host is responsible for its approval presentation and for ensuring the person reviewed the specific operation and affected scope. Future remote or multi-user hosts must define identity, authorization lifetime, revocation, replay protection, concurrency, and approval binding before claiming secure operation.
+The host must present the exact workspace and current workspace-wide revision, operation, affected scope, proposal or historical restore target, resulting notes, source producer identity/version, material origin and uncertainty, active constraints with origins/reasons, and the reason for the change. It must obtain explicit human action through a trusted route before invoking the session with the reviewed immutable values and expected revision. Session possession is not authentication or per-operation consent; a model's claim that approval happened is insufficient. A stale revision rejection requires fresh review and consent, never an automatic retry with a newer expected revision.
+
+Producer attribution belongs to each observation and proposal separately, and constraints retain their origin and reason. The host supplies that metadata; it is not cryptographic authenticity. Display differing observer/interpreter identities and distinguish source-proposal uncertainty from a human correction or restored human result. HIGH support never grants permission or justifies skipping review. The kernel cannot establish whether a person saw or approved the values: these duties remain part of the trusted-host boundary, with no UI or approval-token subsystem added in v0.1.01.
+
+Future remote or multi-user hosts must define identity, authorization lifetime, revocation, replay protection, concurrency, and approval binding before claiming secure operation.
 
 ## Data and secrets
 

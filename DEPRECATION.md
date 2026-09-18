@@ -1,14 +1,26 @@
 # Compatibility and deprecation
 
-Policy revision 1 · foundation v0.1.0 · 2026-09-18
+Policy revision 2 · foundation v0.1.01 · 2026-09-18
 
 This policy covers public operations, contracts, schemas, error codes, modules, tools, adapters, and capability identifiers. It protects users from silent changes while allowing unsafe or inadequate components to be replaced.
 
 ## Current status
 
-v0.1.0 is experimental. No stable interoperability or wire-format contract is claimed. Future 0.x versions may change contracts, but changes still require an explicit version, migration explanation, tests, and changelog entry. Do not reinterpret an old field or error identifier silently.
+v0.1.01 is experimental. No stable interoperability or wire-format contract is claimed. Future 0.x versions may change contracts, but changes still require an explicit version, migration explanation, tests, and changelog entry. Do not reinterpret an old field or error identifier silently.
 
 Use semantic versions for published implementations and explicitly identify their supported contract versions. Once a contract is declared stable, compatible additions belong in a minor release, compatible fixes in a patch release, and incompatible changes require a major contract version. Capability support must be declared rather than inferred from an implementation's version alone.
+
+## Source migration: 0.1.0 to 0.1.01
+
+This is an explicit breaking change to the experimental source API, not a migration of an already published stable API. The 0.1.0 source remains in Git history. There is no durable workspace format or automatic state migration; preserve any live workspace and its originals rather than discarding them to upgrade.
+
+- Import and construct `Producer(identity, version)` with known nonempty identity/version strings, each at most 128 characters. Pass it by keyword to every `observe(..., producer=...)` and `propose(..., producer=...)` call. Missing or invalid values now fail with `VALIDATION_FAILED`. Use distinct producer records when the observer and interpreter differ. Do not invent historical attribution to satisfy the new API.
+- Replace `create_workspace(..., locked_scopes=...)` with `create_workspace(..., constraints=...)`, supplying `LockConstraint(scope, origin, reason)` records. Scope/origin are nonempty strings up to 128 characters; reason is nonempty text up to 4096 characters. Resolve duplicate scopes deliberately; they are rejected rather than silently deduplicated.
+- Update consumers of `Candidate.constraints` and `Revision.constraints`: each entry is now a complete immutable constraint record, not a scope string. Preserve its origin and reason in displays and diagnostics. Constraints remain fixed for the workspace lifetime.
+- Interpret uncertainty according to [SPECIFICATION.md](SPECIFICATION.md); HIGH/MEDIUM/LOW are producer assessments, not probabilities or authorization. Keep explicit human confirmation for every label.
+- Review host approval integration against [SECURITY.md](SECURITY.md). Present the exact operation and resulting material at the reviewed workspace revision, collect explicit human action, and reject silent stale-revision retries. Session possession does not constitute that action.
+
+No analyzer, provider connection, persistence, transport, UI, or approval-token mechanism is introduced by this migration. Existing authority, evidence-retention, and transaction invariants still apply.
 
 ## Deprecate deliberately
 

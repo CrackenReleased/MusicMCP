@@ -1,5 +1,29 @@
 # Music MCP handoff
 
+## 2026-09-18 19:56:19 — Codex — v0.1.01 approved foundation refinements complete
+
+The user's "Great. Take the next steps" approved continuation from the review checkpoint below. Completed only its four foundation refinements: defined qualitative uncertainty, required observation/proposal producer identity/version, retained lock origin/reason, and exact trusted-host approval obligations. The earlier review stop is satisfied; it must not be interpreted as a continuing block on this completed work.
+
+Implementation: immutable Producer and LockConstraint records, fail-closed ingestion/setup validation, complete constraint snapshots, and preserved producer links through confirmation/correction/restore. Existing demo and tests migrated to the explicitly documented 0.1.01 source API. No analyzer, MCP transport, persistence, adapters, GUI, external dependency or website changes. A bounded documentation agent updated SPECIFICATION, reference/CONTRACT, SECURITY and DEPRECATION; lead reviewed the exact diffs. Foundation and contribution status references are current; historical version entries remain intact.
+
+Verification: six new tests were run before implementation. The missing-producer test failed because old code accepted unattributed observation; five other cases errored on absent new record types. After implementation, `python -B -m unittest discover -s tests -v` passed all 27 cases. After final contract edits, the four architecture/documentation checks passed again. `python -B -m reference.demo` ran successfully with producer attribution and a human correction surviving reanalysis. `git diff --check` passed. Sibling scan inspected both observe/propose entry points, Candidate/Revision constraint records and all three mutations; no remaining bare-lock or missing-attribution path exists in supported callers apart from intentional negative tests. Host consent is documented, not falsely claimed as an implemented UI.
+
+Sync: current branch codex/founding-v0.1.0, no upstream. At start local HEAD was 6e50dcdb4724f03eb216f707e3b81749626ba5f5; two assessment documents were already modified and preserved. Refetched origin/main at closing: 2cb7a038e7941a007d4f130528bcce8e2880d72f, unchanged, no divergence. This v0.1.01 commit follows the v0.1.0 commit on the same local branch; after saving it there are two unpushed commits relative to origin/main. No push or deployment requested/performed. Obtain the self-containing final commit hash with `git rev-parse HEAD`; the task response/Hub handoff records the post-commit observation.
+
+Artifact impact: 18 tracked files modified (including the prior assessment records), one new focused test file, no deletions. Net source/demo growth +40 lines; tests +103 lines. New data fields are in-memory producer identity/version and lock origin/reason only; no new persisted musical dataset or database. No binary/generated/temporary artifacts retained and no duplicate implementation. Known Hub Obsidian log-name mismatch remains; no retry or unrelated tool mutation was made.
+
+Stop reason: approved refinements are complete. Exact next action for a separately authorized product milestone: read the 0.1.01 reference contract and define the monophonic analyzer input/output and failure-isolation contract before selecting any analyzer dependency or adding real performance fixtures. Keep producer attribution and human approval boundaries intact. Current work does not authorize transport/storage/adapter expansion.
+
+## 2026-09-18 19:45:06 — Codex — assessment complete; stopped for user review
+
+This entry supersedes the prior instruction to proceed to an analyzer contract. The user explicitly requested an architectural assessment before further substantial implementation and a stop for review. Reviewed the governing documents, repository source/tests and fetched canonical origin. Full assessment, proposed first milestone, risks and open questions are recorded in the newest entry of whats_and_hows_log.md.
+
+Version remains 0.1.0. Existing candidate implementation is preserved. Local branch codex/founding-v0.1.0 has no upstream; HEAD 6e50dcdb4724f03eb216f707e3b81749626ba5f5 is one unpushed commit ahead of origin/main 2cb7a038e7941a007d4f130528bcce8e2880d72f, zero behind, no divergence. Remote has only main with the original README/LICENSE. Working tree was clean before this checkpoint. Only handoff.md and whats_and_hows_log.md now have uncommitted assessment/continuity edits; no untracked files, new commit or push.
+
+Verification: read contracts/source/test suite and inspected sync; last 21-test success applies to the unchanged implementation from the preceding turn. No code tests rerun for prose-only assessment. Findings for review: undefined qualitative uncertainty semantics, missing producer and constraint provenance, trusted-host approval obligations, and limits of in-memory recovery. No implementation fixes were made. Known Obsidian filename mismatch remains; do not repeat the unchanged failing sync operation or modify Hub tooling in this scope.
+
+Exact next action: wait for the user's review of the assessment and proposed first milestone. On a subsequent authorized continuation, resolve only the approved foundation gaps in SPECIFICATION.md/reference/CONTRACT.md and their conformance tests. Do not start transcription, MCP transport, persistence, adapters or website work under this checkpoint. No founding principle or license decision is requested.
+
 ## 2026-09-18 19:39:54 — Codex — v0.1.0 first milestone complete
 
 Stop reason: the founding documentation and smallest reference authority slice are implemented and verified. The overall product vision remains future work, not an implied completed transcription product.

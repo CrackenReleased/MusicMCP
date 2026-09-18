@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.01 — 2026-09-18 — local experimental foundation refinement
+
+- Require immutable producer identity/version on each observation and proposal; missing or invalid attribution is rejected.
+- Replace bare `locked_scopes` with attributed `LockConstraint(scope, origin, reason)` records retained in candidates and revisions; reject duplicate lock scopes.
+- Define all six uncertainty labels and their non-authorizing semantics.
+- Specify exact human review and fresh-consent obligations for trusted hosts; no UI, authentication or approval-token subsystem is claimed.
+- Add six provenance/uncertainty conformance cases; all 27 tests pass. Source migration is documented in DEPRECATION.md.
+- Experimental source API changes are intentionally incompatible with 0.1.0. No dependency, durable data format, network capability or musical representation expansion was introduced.
+
 ## 0.1.0 — 2026-09-18 — local experimental foundation
 
 - Preserved the existing Apache-2.0 license and founding directive; established governing documentation, contracts, error semantics and continuation records.

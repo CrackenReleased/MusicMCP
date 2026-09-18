@@ -8,7 +8,7 @@ from threading import RLock
 from typing import Callable
 from uuid import uuid4
 
-VERSION = '0.1.0'
+VERSION = '0.1.01'
 OPERATIONS = frozenset({'confirm', 'correct', 'restore'})
 UNCERTAINTY = frozenset({'HIGH', 'MEDIUM', 'LOW', 'AMBIGUOUS', 'UNRESOLVED', 'INSUFFICIENT_EVIDENCE'})
 
@@ -102,10 +102,41 @@ class Evidence:
 
 
 @dataclass(frozen=True)
+class Producer:
+    """Host-attributed producer identity, not proof of authenticity."""
+    identity: str
+    version: str
+
+    def __post_init__(self):
+        text(self.identity)
+        text(self.version)
+
+
+@dataclass(frozen=True)
+class LockConstraint:
+    scope: str
+    origin: str
+    reason: str
+
+    def __post_init__(self):
+        text(self.scope)
+        text(self.origin)
+        text(self.reason, 4096)
+
+
+def attributed(producer):
+    if type(producer) is not Producer:
+        fail('VALIDATION_FAILED', 'A validated Producer identity and version are required.',
+             'Supply the actual producer attribution from the trusted host.')
+    return producer
+
+
+@dataclass(frozen=True)
 class Observation:
     id: str
     evidence_id: str
     description: str
+    producer: Producer
 
 
 @dataclass(frozen=True)
@@ -118,6 +149,7 @@ class Proposal:
     mode: str
     uncertainty: str
     origin: str
+    producer: Producer
 
 
 @dataclass(frozen=True)
@@ -133,7 +165,7 @@ class Candidate:
     reason: str
     expected_revision: int
     restored_from: int | None
-    constraints: tuple[str, ...]
+    constraints: tuple[LockConstraint, ...]
 
 
 @dataclass(frozen=True)
@@ -150,7 +182,7 @@ class Revision:
     origin: str
     reason: str
     restored_from: int | None
-    constraints: tuple[str, ...]
+    constraints: tuple[LockConstraint, ...]
 
 
 @dataclass(frozen=True)
@@ -162,10 +194,13 @@ class Snapshot:
 
 class Workspace:
     """Read/proposal surface. Only host-issued sessions can commit through it."""
-    def __init__(self, locked_scopes=(), policy=None, validator=None):
-        if type(locked_scopes) not in (tuple, list, set, frozenset):
-            fail('VALIDATION_FAILED', 'Locked scopes must be an explicit collection.')
-        self._locked = frozenset(text(scope) for scope in locked_scopes)
+    def __init__(self, constraints=(), policy=None, validator=None):
+        if type(constraints) not in (tuple, list) or any(type(item) is not LockConstraint for item in constraints):
+            fail('VALIDATION_FAILED', 'Constraints must be a list or tuple of attributed LockConstraint records.')
+        if len({item.scope for item in constraints}) != len(constraints):
+            fail('VALIDATION_FAILED', 'Each locked scope must have one unambiguous constraint record.')
+        self._constraints = tuple(sorted(constraints, key=lambda item: item.scope))
+        self._locked = frozenset(item.scope for item in self._constraints)
         if any(callback is not None and not callable(callback) for callback in (policy, validator)):
             fail('VALIDATION_FAILED', 'Policy and validator must be callable or absent.')
         self._policy = policy
@@ -230,18 +265,20 @@ class Workspace:
             return record
 
     @diagnosed
-    def observe(self, evidence_id, description):
+    def observe(self, evidence_id, description, *, producer=None):
         text(description, 4096)
+        producer = attributed(producer)
         with self._lock:
             evidence = self.evidence(evidence_id)
             self._capacity(self._observations, 1024)
-            record = Observation(uuid4().hex, evidence.id, description)
+            record = Observation(uuid4().hex, evidence.id, description, producer)
             self._observations[record.id] = record
             return record
 
     @diagnosed
-    def propose(self, observation_id, scope, notes, mode, uncertainty, origin):
+    def propose(self, observation_id, scope, notes, mode, uncertainty, origin, *, producer=None):
         text(scope)
+        producer = attributed(producer)
         notes = phrase(notes)
         if (type(mode) is not str or mode not in ('intended', 'literal')
                 or type(uncertainty) is not str or uncertainty not in UNCERTAINTY
@@ -251,7 +288,7 @@ class Workspace:
             observation = self.observation(observation_id)
             self._capacity(self._proposals, 1024)
             record = Proposal(uuid4().hex, observation.id, observation.evidence_id, scope,
-                              notes, mode, uncertainty, origin)
+                              notes, mode, uncertainty, origin, producer)
             self._proposals[record.id] = record
             return record
 
@@ -318,7 +355,7 @@ class Workspace:
                      'Read current state, review differences, then authorize again.', operation, scope)
             candidate = Candidate(grant.actor, operation, scope, chosen_notes, proposal.id,
                                   proposal.observation_id, proposal.evidence_id, origin, reason,
-                                  expected_revision, restored_from, tuple(sorted(self._locked)))
+                                  expected_revision, restored_from, self._constraints)
             self._busy = True
             try:
                 self._decision(self._policy, candidate, policy=True)
@@ -356,11 +393,11 @@ class AuthoritySession:
         return self._workspace._commit(self._token, 'restore', revision, None, expected_revision, reason)
 
 
-def create_workspace(grants, locked_scopes=(), policy: Callable | None = None, validator: Callable | None = None):
+def create_workspace(grants, constraints=(), policy: Callable | None = None, validator: Callable | None = None):
     """Trusted host setup. Factory/session creation is not a model-facing tool."""
     if type(grants) not in (tuple, list) or any(type(grant) is not Grant for grant in grants):
         fail('VALIDATION_FAILED', 'Expected an explicit list of validated host grants.')
-    workspace = Workspace(locked_scopes, policy, validator)
+    workspace = Workspace(constraints, policy, validator)
     sessions = []
     for grant in grants:
         token = object()

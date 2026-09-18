@@ -1,6 +1,6 @@
 # Contributing
 
-Music MCP welcomes contributions that preserve human musical authority and make the project understandable to the next maintainer. The foundation is experimental v0.1.0; it is not yet a production server or transcription system.
+Music MCP welcomes contributions that preserve human musical authority and make the project understandable to the next maintainer. The foundation is experimental v0.1.01; it is not yet a production server or transcription system.
 
 ## Start here
 

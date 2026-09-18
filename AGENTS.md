@@ -1,6 +1,6 @@
 # Music MCP agent instructions
 
-Policy revision 1 · 2026-09-18 · foundation v0.1.0
+Policy revision 1 · 2026-09-18 · foundation v0.1.01
 
 For work on the founding Windows workspace, read `E:\AI_Hub\AGENTS.md` end to end before code work, particularly §20, then this file. That local workspace guidance applies there; contributors elsewhere need no access to that drive. Project behavior is governed by the documents below.
 
@@ -21,7 +21,7 @@ Read the founding directive for unresolved foundational questions. Inspect exist
 
 ## Bound the work
 
-v0.1.0 is an experimental dependency-free Python 3.11+ in-process reference core. Do not describe it as an MCP server, audio analyzer, notation application, or export pipeline. Add those capabilities only through a separately scoped contract and milestone.
+v0.1.01 is an experimental dependency-free Python 3.11+ in-process reference core. Do not describe it as an MCP server, audio analyzer, notation application, or export pipeline. Add those capabilities only through a separately scoped contract and milestone.
 
 Never expose host approval, grants, or authoritative mutation control to models. Do not collapse evidence, observation, interpretation, suggestion, confirmation, and change. Do not silently broaden authorization, override human correction, mutate locked content, discard provenance, or disguise generated material as original human material.
 

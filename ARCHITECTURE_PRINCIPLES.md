@@ -1,6 +1,6 @@
 # Architecture principles
 
-v0.1.0 · 2026-09-18
+v0.1.01 · 2026-09-18
 
 The governing constitution is [PHILOSOPHY.md](PHILOSOPHY.md). Normative behavior belongs in [SPECIFICATION.md](SPECIFICATION.md); failure semantics belong in [ERRORS.md](ERRORS.md). This document records the engineering rules that protect them.
 

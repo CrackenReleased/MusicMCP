@@ -1,4 +1,4 @@
-# Music MCP specification — 0.1.0 (experimental)
+# Music MCP specification — 0.1.01 (experimental)
 
 MUST/MUST NOT are requirements; SHOULD identifies an expected default whose exceptions need documented reasons. This specification describes the founding architecture. The implemented subset is identified below and in [CONFORMANCE.md](CONFORMANCE.md). It does not claim a complete music format or MCP server.
 
@@ -16,15 +16,36 @@ MUST/MUST NOT are requirements; SHOULD identifies an expected default whose exce
 
 ## Implemented reference profile
 
-One in-process workspace contains named phrase scopes. Original bytes, observations, and interpretations are append-only. An interpretation links an observation to a proposed ordered monophonic phrase and carries `intended` or `literal` task mode, uncertainty, and `interpreted` or `generated` origin. No inference algorithm runs in this release.
+One in-process workspace contains named phrase scopes. Original bytes, observations, and interpretations are append-only. An interpretation links an observation to a proposed ordered monophonic phrase and carries `intended` or `literal` task mode, uncertainty, and `interpreted` or `generated` origin. Each observation and each proposal MUST retain its own immutable producer identity and version. The observer and interpreter MAY be different producers. The trusted host supplies this attribution; it is not cryptographic proof of identity or correctness. Missing or invalid producer records MUST be rejected. No inference algorithm runs in this release.
 
 The narrow note profile is spelled Western pitches (A–G, optional single sharp/flat, octave 0–9) or `rest`; duration is an exact positive rational number of quarter-note units. The ordered phrase has no overlap, meter, voice, engraving, tuning conversion, or implicit quantization. Unsupported representations MUST be rejected, never silently approximated. These limits apply to this profile only.
 
-Authority is a separate host-held capability bound to actor, scope set, and operation set (`confirm`, `correct`, `restore`). Default is denial. The factory is trusted host setup; it MUST NOT be exposed as a model tool. Locked scopes reject all content mutations in this release. Locks and grants remain fixed for the workspace lifetime. Policy is a host-provided pure decision callback, independently evaluated for every write and denied on exceptions or non-boolean results.
+Authority is a separate host-held capability bound to actor, scope set, and operation set (`confirm`, `correct`, `restore`). Default is denial. The factory is trusted host setup; it MUST NOT be exposed as a model tool. Each lock MUST retain its scope, origin, and reason as an immutable constraint record. Duplicate lock scopes MUST be rejected. Locked scopes reject all content mutations in this release. Constraints and grants remain fixed for the workspace lifetime; each candidate and committed revision MUST retain the complete active constraint records. Policy is a host-provided pure decision callback, independently evaluated for every write and denied on exceptions or non-boolean results.
 
 Confirmation chooses a supplied interpretation. Correction records explicit human replacement content while retaining the original proposal/evidence lineage. Restore selects the content and origin of a historical revision of the same scope and appends a new revision. All writes require the current **workspace-wide** revision, a nonempty reason, and a scoped session. Preview and analysis do not mutate authoritative state. No automatic authorization, delegated machine writes, or inferred approval is supported.
 
 See [reference/CONTRACT.md](reference/CONTRACT.md) for callable API, bounds, state lifecycle and exact failure behavior. The host MUST retain originals durably before relying on this in-memory prototype for real work.
+
+## Uncertainty semantics
+
+Uncertainty labels describe the proposal producer's assessment, not a calibrated probability or authorization:
+
+| Label | Meaning |
+| --- | --- |
+| HIGH | The producer assesses strong support for this reading from the available evidence and task context. |
+| MEDIUM | The producer assesses moderate support; material uncertainty remains. |
+| LOW | The producer assesses weak support; the reading is tentative. |
+| AMBIGUOUS | Competing readings remain plausible and unresolved. |
+| UNRESOLVED | The assessment or interpretation has not been settled, including when it has not been assessed. |
+| INSUFFICIENT_EVIDENCE | Available input is inadequate to support a settled interpretation. |
+
+Labels MUST NOT be treated as numerical probabilities, comparable scores across producers, permission, or a basis for automatic selection. Every label requires the same explicit human confirmation before a proposal becomes authoritative. The host MUST preserve the distinction between the producer's assessment and the human's decision.
+
+## Trusted-host approval obligations
+
+Possession of a scoped session establishes a technical capability; it does not prove authentication or per-operation consent. Before invoking a session, the host MUST present the exact workspace and current workspace-wide revision, operation, affected scope, proposal or historical restore target, resulting notes, source producer identity/version, material origin and uncertainty, active constraint records, and the reason for the change. For correction or restore, the host MUST distinguish the proposed resulting material from the source proposal's interpretation and uncertainty rather than implying that the producer assessed the human replacement.
+
+The host MUST obtain an explicit human action through a trusted route and invoke the session with the reviewed immutable values and expected revision. A stale revision rejection requires fresh review and consent; the host MUST NOT silently substitute a newer revision and retry. Model text claiming approval is not a trusted human action. These are host integration obligations: the in-process kernel does not implement a UI, identity service, or per-operation approval-token subsystem.
 
 ## Extension requirements (not implemented)
 

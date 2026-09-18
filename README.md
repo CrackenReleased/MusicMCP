@@ -4,9 +4,11 @@
 
 Open musical intelligence infrastructure connecting human intention, evidence, responsible machine assistance, and existing musical tools. Models propose; explicit human authority governs changes. MusicXML, MIDI, notation applications, and MCP transports will connect through replaceable boundaries.
 
-## Current status: v0.1.0 experimental foundation
+## Current status: v0.1.01 experimental foundation
 
 The first build provides a documented, executable **in-process authority kernel**, not a transcription product or MCP server. It preserves supplied evidence and competing interpretations, supports human confirmation/correction, rejects unauthorized and stale changes, retains provenance, and restores historical phrase content through new revisions.
+
+Observations and proposals require their own producer identity/version. Locks retain who supplied them and why; revisions preserve those records. Qualitative uncertainty describes a producer's assessment and never grants authority. See [source migration](DEPRECATION.md) for the 0.1.0 → 0.1.01 API changes and [host approval obligations](SECURITY.md) before integrating the core.
 
 No audio analysis, model integration, MCP transport, GUI, notation rendering, file export, or durable storage is implemented. Nothing here changes CrackenReleased.com or other projects. Original Apache-2.0 licensing is preserved.
 

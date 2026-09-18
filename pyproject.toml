@@ -1,6 +1,6 @@
 [project]
 name = "musicmcp-reference"
-version = "0.1.0"
+version = "0.1.01"
 description = "Experimental human-authority kernel for Music MCP"
 requires-python = ">=3.11"
 license = {text = "Apache-2.0"}

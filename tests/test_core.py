@@ -4,7 +4,9 @@ from dataclasses import FrozenInstanceError
 from fractions import Fraction
 from concurrent.futures import ThreadPoolExecutor
 
-from reference.core import Grant, MusicError, Note, create_workspace
+from reference.core import Grant, LockConstraint, MusicError, Note, Producer, create_workspace
+
+PRODUCER = Producer('supplied-test-fixture', '1')
 
 
 class CoreConformance(unittest.TestCase):
@@ -12,10 +14,10 @@ class CoreConformance(unittest.TestCase):
         self.workspace, (self.human,) = create_workspace(
             [Grant('musician', {'phrase-1'}, {'confirm', 'correct', 'restore'})], **kwargs)
         self.evidence = self.workspace.add_evidence(b'original performance bytes', 'audio/wav')
-        self.observation = self.workspace.observe(self.evidence.id, 'Pitch drift; two rhythmic interpretations.')
+        self.observation = self.workspace.observe(self.evidence.id, 'Pitch drift; two rhythmic interpretations.', producer=PRODUCER)
         self.notes = (Note('A4', Fraction(1, 2)), Note('B4', Fraction(1, 2)))
         self.proposal = self.workspace.propose(self.observation.id, 'phrase-1', self.notes,
-                                               'intended', 'AMBIGUOUS', 'interpreted')
+                                               'intended', 'AMBIGUOUS', 'interpreted', producer=PRODUCER)
 
     def reject(self, code, action):
         before = self.workspace.snapshot()
@@ -33,7 +35,7 @@ class CoreConformance(unittest.TestCase):
     def test_evidence_and_competing_interpretations_never_establish_authority(self):
         self.setup_workspace()
         alternative = self.workspace.propose(self.observation.id, 'phrase-1',
-            (Note('Ab4', Fraction(1)),), 'literal', 'UNRESOLVED', 'interpreted')
+            (Note('Ab4', Fraction(1)),), 'literal', 'UNRESOLVED', 'interpreted', producer=PRODUCER)
         self.assertNotEqual(alternative.id, self.proposal.id)
         self.assertEqual(self.workspace.preview(self.proposal.id).notes, self.notes)
         self.assertEqual(self.workspace.snapshot().revision, 0)
@@ -47,7 +49,7 @@ class CoreConformance(unittest.TestCase):
         self.assertEqual(correction.origin, 'human')
         self.assertEqual(correction.evidence_id, self.evidence.id)
         self.workspace.propose(self.observation.id, 'phrase-1', self.notes,
-                               'intended', 'HIGH', 'interpreted')
+                               'intended', 'HIGH', 'interpreted', producer=PRODUCER)
         self.assertEqual(self.workspace.snapshot().phrases[0].notes, correction.notes)
         restored = self.human.restore(original.number, 2, 'Restore first accepted phrase')
         self.assertEqual(restored.notes, self.notes)
@@ -58,25 +60,25 @@ class CoreConformance(unittest.TestCase):
     def test_generated_acceptance_does_not_become_human_authorship(self):
         self.setup_workspace()
         generated = self.workspace.propose(self.observation.id, 'phrase-1', self.notes,
-                                           'intended', 'UNRESOLVED', 'generated')
+                                           'intended', 'UNRESOLVED', 'generated', producer=PRODUCER)
         revision = self.human.confirm(generated.id, 0, 'Accept generated suggestion')
         self.assertEqual(revision.origin, 'generated')
         self.assertEqual(revision.actor, 'musician')
 
     def test_lock_rejects_confirm_and_correct(self):
-        self.setup_workspace(locked_scopes={'phrase-1'})
+        self.setup_workspace(constraints=[LockConstraint('phrase-1', 'test-composer', 'Keep melody unchanged')])
         self.reject('CONSTRAINT_CONFLICT', lambda: self.human.confirm(self.proposal.id, 0, 'Accept'))
         self.reject('CONSTRAINT_CONFLICT', lambda: self.human.correct(self.proposal.id, self.notes, 0, 'Correct'))
 
     def test_scope_and_operation_authority_do_not_expand(self):
         self.setup_workspace()
         other = self.workspace.propose(self.observation.id, 'other', self.notes,
-                                       'intended', 'HIGH', 'interpreted')
+                                       'intended', 'HIGH', 'interpreted', producer=PRODUCER)
         self.reject('UNAUTHORIZED', lambda: self.human.confirm(other.id, 0, 'Accept'))
         workspace, (session,) = create_workspace([Grant('reader', {'phrase-1'}, set())])
         evidence = workspace.add_evidence(b'x', 'audio/wav')
-        observation = workspace.observe(evidence.id, 'Observed')
-        proposal = workspace.propose(observation.id, 'phrase-1', self.notes, 'intended', 'HIGH', 'interpreted')
+        observation = workspace.observe(evidence.id, 'Observed', producer=PRODUCER)
+        proposal = workspace.propose(observation.id, 'phrase-1', self.notes, 'intended', 'HIGH', 'interpreted', producer=PRODUCER)
         self.workspace = workspace
         self.reject('UNAUTHORIZED', lambda: session.confirm(proposal.id, 0, 'Accept'))
 
@@ -102,7 +104,7 @@ class CoreConformance(unittest.TestCase):
     def test_mutable_inputs_and_return_values_cannot_mutate_state(self):
         self.setup_workspace()
         supplied = list(self.notes)
-        proposal = self.workspace.propose(self.observation.id, 'phrase-1', supplied, 'intended', 'HIGH', 'interpreted')
+        proposal = self.workspace.propose(self.observation.id, 'phrase-1', supplied, 'intended', 'HIGH', 'interpreted', producer=PRODUCER)
         supplied.clear()
         revision = self.human.confirm(proposal.id, 0, 'Accept')
         self.assertEqual(revision.notes, self.notes)
@@ -116,7 +118,7 @@ class CoreConformance(unittest.TestCase):
         self.reject('NOT_FOUND', lambda: self.human.restore(99, 0, 'Restore'))
         self.reject('VALIDATION_FAILED', lambda: self.human.correct(self.proposal.id, (), 0, 'Empty'))
         self.reject('VALIDATION_FAILED', lambda: self.workspace.propose(self.observation.id, 'phrase-1',
-            self.notes, 'intended', 0.9137, 'human'))
+            self.notes, 'intended', 0.9137, 'human', producer=PRODUCER))
         for pitch, duration in [('H4', Fraction(1)), ('A4', Fraction(0)), ('A4', 1.5)]:
             with self.subTest(pitch=pitch, duration=duration):
                 self.reject('VALIDATION_FAILED', lambda: Note(pitch, duration))
@@ -181,9 +183,9 @@ class CoreConformance(unittest.TestCase):
             Grant('other', {'b'}, {'restore'})], policy=lambda _: not blocked[0])
         self.workspace = workspace
         source = workspace.add_evidence(b'x', 'audio/wav')
-        observation = workspace.observe(source.id, 'Supplied interpretation')
+        observation = workspace.observe(source.id, 'Supplied interpretation', producer=PRODUCER)
         proposals = [workspace.propose(observation.id, scope, (Note('A4', Fraction(1)),),
-                                      'intended', 'HIGH', 'interpreted') for scope in ('a', 'b')]
+                                      'intended', 'HIGH', 'interpreted', producer=PRODUCER) for scope in ('a', 'b')]
         human.confirm(proposals[0].id, 0, 'Accept a')
         b = human.confirm(proposals[1].id, 1, 'Accept b')
         self.reject('UNAUTHORIZED', lambda: limited.restore(1, 2, 'Cannot reach a'))
@@ -208,9 +210,9 @@ class CoreConformance(unittest.TestCase):
                 ('proposal', lambda: self.workspace.proposal('missing')),
                 ('preview', lambda: self.workspace.preview('missing')),
                 ('add_evidence', lambda: self.workspace.add_evidence(b'', 'audio/wav')),
-                ('observe', lambda: self.workspace.observe('missing', 'Observation')),
+                ('observe', lambda: self.workspace.observe('missing', 'Observation', producer=PRODUCER)),
                 ('propose', lambda: self.workspace.propose('missing', 'phrase-1', self.notes,
-                                                          'intended', 'HIGH', 'interpreted'))]:
+                                                          'intended', 'HIGH', 'interpreted', producer=PRODUCER))]:
             with self.subTest(operation=operation):
                 with self.assertRaises(MusicError) as context:
                     action()

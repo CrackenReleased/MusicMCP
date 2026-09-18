@@ -1,4 +1,4 @@
-# Conformance — experimental profile 0.1.0
+# Conformance — experimental profile 0.1.01
 
 Run from the repository root with Python 3.11+: `python -B -m unittest discover -s tests -v`. No dependencies, recordings, secrets, network access, or application installations are required. The synthetic demo is also independently runnable with `python -B -m reference.demo`.
 
@@ -22,6 +22,12 @@ Passing these tests establishes only the implemented in-memory phrase profile. I
 | Maintainable contracts | document-link and version-metadata checks |
 
 The shared rejection helper asserts snapshot equality, safe unchanged authoritative state, no rollback claim, trace ID, and recovery guidance after each tested failure. Tests were written before the kernel and initially failed because `reference.core` did not exist. This is a new-feature red baseline, not a claim to have reproduced a preexisting product bug.
+
+## Provenance and approval refinement
+
+`tests/test_provenance.py` adds six cases: missing producer rejection; separate observer/interpreter lineage across confirmation/correction/restore; malformed producer rejection at both boundaries; immutable constraint origin/reason retained through revisions; invalid/duplicate constraint rejection; and all six uncertainty labels remaining provisional until human action. The original v0.1.0 accepted an unattributed observation, so that regression failed before the fix. The other initial failures were missing new record types, not historical runtime defects. The full suite now contains 27 passing tests.
+
+Host consent presentation is a normative integration obligation, not an implemented UI or authentication system. This suite checks the kernel's grants, revision preconditions and publication boundaries; it cannot certify that a host actually displayed the reviewed values or obtained consent. A future host implementation must provide its own consent and stale-retry tests before claiming that conformance.
 
 ## Future profiles
 
