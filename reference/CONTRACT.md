@@ -1,0 +1,29 @@
+# Reference kernel contract — 0.1.0
+
+Owner: Music MCP core maintainers. Implementation: `reference/core.py`. Consumer: trusted local hosts and the conformance suite. Dependencies: Python 3.11+ standard library only. No networking, disk writes, telemetry, provider calls, or external side effects. Experimental source API; not an MCP wire schema.
+
+## API and boundaries
+
+`create_workspace(grants, locked_scopes=(), policy=None, validator=None)` returns `(workspace, sessions)`, one host-held session per immutable `Grant(actor, scopes, operations)`. Scope/operation sets are explicit, with no wildcards. Sessions are privileged host capabilities; their possession represents host authorization, not authentication. Do not expose the factory, session objects, or arbitrary Python execution to a model. Model-facing wrappers may expose only read/proposal operations.
+
+Workspace APIs: `add_evidence(bytes, media_type)`, `observe(evidence_id, description)`, `propose(observation_id, scope, notes, mode, uncertainty, origin)`, `preview(proposal_id)`, `snapshot()`, and `capabilities()`. Returned evidence includes original bytes and SHA-256. A proposal retains its observation and evidence IDs. Read methods `evidence(id)`, `observation(id)`, `proposal(id)` return immutable records. IDs are opaque and generated locally. Callers cannot supply provenance IDs as substitutes for stored records.
+
+Session APIs: `confirm(proposal_id, expected_revision, reason)`, `correct(proposal_id, notes, expected_revision, reason)`, and `restore(revision, expected_revision, reason)`. Result is either an immutable `Revision` or a `MusicError` exception containing an immutable structured diagnostic. Proposal creation never calls these methods implicitly. Corrections use the proposal's scope/lineage, create a new human-origin revision, and do not rewrite the proposal. A correction may intentionally replace current intent only through the privileged session.
+
+`Note(pitch, duration)` uses a pitch string and `fractions.Fraction`. A phrase contains 1–4096 Notes; immutable tuple copies prevent input-list aliasing. `Grant` freezes supplied scope and operation sets. Runtime checks reject booleans masquerading as revision integers, invalid enum values, unknown references, empty strings, nonpositive durations, and unsupported pitch notation.
+
+## State and transactions
+
+The snapshot is an immutable `(revision, phrases, history)` value. Phrases and history are tuples; callers receive no writable dictionaries. One workspace-wide monotonically increasing revision protects concurrent writes across all scopes. Revision 0 is empty. `restore` accepts an existing positive revision and restores that revision's phrase, not the entire workspace; other scopes stay unchanged. It records the restored revision number and preserves the material's original classification.
+
+Write sequence: validate request and references → check capability/grant → check expected revision → policy → locks → validate candidate → construct new history and snapshot → publish once under the workspace lock. Policy and post-validator callbacks receive an immutable Candidate; they must return exactly True to permit progress. False denies; exceptions and invalid returns fail closed. They are trusted, pure, synchronous host integrations, not sandboxed plug-ins. A reentrant write from a callback is rejected. Slow callbacks block writes and must be bounded by a future host execution boundary.
+
+Failures before publication leave authoritative state unchanged; diagnostic transaction is `not_committed`, rollback is `not_required`, and state is safe. This is copy-on-write atomicity in one live process, not disk durability or compensation for external effects. No rollback procedure can fail because none runs. Unexpected failures outside the supported domain (process termination, memory exhaustion, malicious same-process code) are not covered by this guarantee. No persistent storage or restart recovery is claimed.
+
+## Bounds and lifecycle
+
+Each workspace permits at most 128 evidence records (1 MiB each), 1024 observations, 1024 proposals, and 1024 committed revisions. Text fields are bounded at 4096 characters; labels/IDs at 128. Limits reject new entries with CAPACITY_EXCEEDED, never silently evict history. Data may contain private/licensed performances. It stays in memory until the host disposes of the workspace/process; no corpus or user dataset is persisted. The host owns any durable retention policy. Future durable implementations must publish migration/retention rules before claiming production suitability.
+
+## Compatibility and failure surface
+
+Errors follow [../ERRORS.md](../ERRORS.md). Capability discovery reports this profile and explicitly marks transcription, MCP transport, adapters and durable storage unavailable. No lossy exporter exists. Changes follow [../DEPRECATION.md](../DEPRECATION.md); tests in `tests/test_core.py` define the executable reference subset. Read root AGENTS.md before editing this sole implementation module; local decision/handoff truth remains in root logs until this module needs its own independent lifecycle.

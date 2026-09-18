@@ -1,0 +1,31 @@
+# Music MCP specification — 0.1.0 (experimental)
+
+MUST/MUST NOT are requirements; SHOULD identifies an expected default whose exceptions need documented reasons. This specification describes the founding architecture. The implemented subset is identified below and in [CONFORMANCE.md](CONFORMANCE.md). It does not claim a complete music format or MCP server.
+
+## Foundational requirements
+
+1. **AUTH-1:** Human intent MUST be authoritative. Models MUST NOT possess direct access to authoritative mutation. Host-established, scoped authorization MUST precede every consequential change; authorization MUST NOT expand to consequential artistic remedies.
+2. **EVID-1:** Source evidence MUST remain distinguishable from derived observations, provisional interpretations, generated suggestions, and authoritative state. Interpretations MUST NOT overwrite source evidence.
+3. **INTENT-1:** Confirmed human corrections MUST NOT be overwritten by later analysis. Reopening or changing intent requires fresh appropriate human authority.
+4. **PROV-1:** Every revision MUST identify its actor, operation, reason, source proposal, material origin, constraints, and predecessor. Accepting generated music MUST NOT relabel it as human-authored.
+5. **TX-1:** A failed operation MUST NOT expose partial authoritative changes. Expected-revision preconditions MUST prevent stale writes. Restore MUST preserve intervening history. A failure result MUST state actual state and rollback consequences.
+6. **ISO-1:** Optional modules MUST use documented boundaries and MUST NOT own authoritative state. Capability, authority, policy, and musical constraints MUST remain separate decisions. Failure of optional analysis MUST NOT prevent reading existing state.
+7. **REP-1:** Adapters MUST disclose loss, ambiguity, and unsupported representations before consequential export. Musical concepts MUST NOT be limited globally to the reference profile or any external format.
+8. **UNC-1:** Uncertainty MUST describe its meaning; uncalibrated numeric confidence MUST NOT establish authority. Competing interpretations MAY coexist without selecting a model winner.
+9. **ERR-1:** Failures MUST provide a stable code, human explanation, module/operation/scope, trace, state impact, rollback status, and recovery action. Unknown safety MUST NOT be reported as safe.
+
+## Implemented reference profile
+
+One in-process workspace contains named phrase scopes. Original bytes, observations, and interpretations are append-only. An interpretation links an observation to a proposed ordered monophonic phrase and carries `intended` or `literal` task mode, uncertainty, and `interpreted` or `generated` origin. No inference algorithm runs in this release.
+
+The narrow note profile is spelled Western pitches (A–G, optional single sharp/flat, octave 0–9) or `rest`; duration is an exact positive rational number of quarter-note units. The ordered phrase has no overlap, meter, voice, engraving, tuning conversion, or implicit quantization. Unsupported representations MUST be rejected, never silently approximated. These limits apply to this profile only.
+
+Authority is a separate host-held capability bound to actor, scope set, and operation set (`confirm`, `correct`, `restore`). Default is denial. The factory is trusted host setup; it MUST NOT be exposed as a model tool. Locked scopes reject all content mutations in this release. Locks and grants remain fixed for the workspace lifetime. Policy is a host-provided pure decision callback, independently evaluated for every write and denied on exceptions or non-boolean results.
+
+Confirmation chooses a supplied interpretation. Correction records explicit human replacement content while retaining the original proposal/evidence lineage. Restore selects the content and origin of a historical revision of the same scope and appends a new revision. All writes require the current **workspace-wide** revision, a nonempty reason, and a scoped session. Preview and analysis do not mutate authoritative state. No automatic authorization, delegated machine writes, or inferred approval is supported.
+
+See [reference/CONTRACT.md](reference/CONTRACT.md) for callable API, bounds, state lifecycle and exact failure behavior. The host MUST retain originals durably before relying on this in-memory prototype for real work.
+
+## Extension requirements (not implemented)
+
+Future modules MUST declare version/capabilities, schemas, permissions, side effects, network/data retention, policy restrictions, validation, failure modes, and rollback guarantees. Discovery MUST distinguish supported, disabled, degraded, and unsupported capabilities. Distributed identities, durable transactions, adapters, calibrated uncertainty, collaborative conflict resolution, and actual transcription require additional contracts and conformance profiles. Supporting a future feature MUST NOT weaken the above invariants.
