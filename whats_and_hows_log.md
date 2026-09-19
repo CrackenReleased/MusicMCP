@@ -1,5 +1,14 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 21:30:00 — MusicXML and MIDI Format Adapters with Explicit Loss Disclosure
+
+Decision: Implement isolated MusicXML and MIDI format adapters adhering to SPECIFICATION REP-1 and zero-dependency Python 3.11+ standard library.
+- Constitutional Boundary: In accordance with REP-1 and the Founding Directive, external musical formats carry inherent loss and formatting assumptions. Every conversion must explicitly disclose all discarded or approximated features via an immutable `LossReport(source_format, target_format, loss_type, disclosed_losses, summary)`.
+- MusicXML Adapter (`reference/adapters/musicxml.py`): Converts `phrase` to MusicXML 3.1 Partwise XML string using `xml.etree.ElementTree`. Uses divisions = 480 to preserve exact rational note durations without float rounding. Discloses visual engraving omission, expression marking omission, and monophonic voice assumption. Re-imports MusicXML by parsing pitch steps, octaves, alter values, and forward/duration tags into exact rational `Note` objects.
+- MIDI Adapter (`reference/adapters/midi.py`): Pure Python binary SMF Format 0 generation and parsing with standard `struct` and VLQ encoding. Writes MThd header and single MTrk track with set-tempo (microseconds per quarter) and note-on/note-off events with delta-times at 480 ticks/quarter note. Discloses velocity standardization to 64, enharmonic spelling flattening to MIDI key numbers, and channel 0 binding. Re-imports binary MIDI streams by parsing track chunks, delta times, and note-on/note-off pairs into exact rational `Note` objects.
+- Authority Isolation: Adapters are purely functional transformation tools. They have no access to `AuthoritySession` and cannot mutate or publish workspace revisions.
+- Verification: 5 conformance tests in `tests/test_adapters.py` verifying export, import, loss disclosure, and exact round-tripping. Full test suite passes (60/60 tests). Executable demonstration in `reference/demo_adapters.py`.
+
 ## 2026-09-18 21:25:00 — Model-Facing MCP Transport Contract and Reference Implementation
 
 Decision: Implement the Model-Facing Model Context Protocol (MCP) Transport Contract (`reference/MCP_CONTRACT.md`) and standard-library reference server (`reference/mcp_server.py`).

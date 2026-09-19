@@ -1,5 +1,18 @@
 # Music MCP handoff
 
+## 2026-09-18 21:30:00 — Antigravity — MusicXML and MIDI Format Adapters Silo Complete
+
+Scope completed: Defined the Format Adapters Contract (`reference/adapters/ADAPTER_CONTRACT.md`), implemented pure standard-library MusicXML 3.1 Partwise adapter (`reference/adapters/musicxml.py`), implemented pure standard-library SMF Format 0 MIDI adapter (`reference/adapters/midi.py`), added 5 conformance tests (`tests/test_adapters.py`), and created live demonstration (`reference/demo_adapters.py`). All 60 tests in the workspace pass cleanly.
+
+Verification:
+- `python -m unittest tests/test_adapters.py`: 5/5 tests passed in 0.001s.
+- `python -m unittest discover -s tests`: 60/60 tests passed.
+- `python -m reference.demo_adapters`: Verified 100% exact mathematical round-tripping for both MusicXML and MIDI, alongside complete loss disclosure reporting.
+- Verified loss disclosure invariant: Every export and import produces an immutable `LossReport`.
+- Verified authority boundary: Adapters operate as pure transformers with zero mutation authority.
+
+Exact next action: Implement durable evidence and revision storage (`reference/storage/`) or scoped collaboration session protocol.
+
 ## 2026-09-18 21:25:00 — Antigravity — Model-Facing MCP Transport Contract and Reference Implementation Complete
 
 Scope completed: Defined the Model-Facing MCP Transport Contract (`reference/MCP_CONTRACT.md`), implemented the dependency-free stdio JSON-RPC 2.0 MCP server (`reference/mcp_server.py`), created 7 conformance and security tests (`tests/test_mcp.py`), and created live demonstration (`reference/demo_mcp.py`). All 55 tests in the workspace pass cleanly.

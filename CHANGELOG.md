@@ -2,6 +2,12 @@
 
 ## 0.1.01 — 2026-09-18 — local experimental foundation refinement
 
+- Define Format Adapters Contract in `reference/adapters/ADAPTER_CONTRACT.md` establishing SPECIFICATION REP-1 loss disclosure and strict isolation from host authority.
+- Implement MusicXML 3.1 Partwise adapter (`reference/adapters/musicxml.py`) supporting bi-directional conversion (`phrase_to_musicxml` and `musicxml_to_phrase`) with explicit `LossReport` disclosing omitted layout, formatting, dynamics, and polyphony details.
+- Implement Standard MIDI File (SMF Format 0) adapter (`reference/adapters/midi.py`) with pure Python variable-length quantity (VLQ) encoder/decoder, supporting bi-directional conversion (`phrase_to_midi` and `midi_to_phrase`) with explicit `LossReport` disclosing velocity standardization, enharmonic flattening, and channel assignments.
+- Add 5 adapter conformance tests in `tests/test_adapters.py` (total 60 passing tests).
+- Add executable format adapters demonstration in `reference/demo_adapters.py` confirming 100% exact mathematical round-tripping for both MusicXML and MIDI.
+
 - Define Model-Facing MCP Transport Contract in `reference/MCP_CONTRACT.md` exposing read, analysis, spectrum inspection, and proposal operations to external Ai models while strictly preserving host-held human authority.
 - Implement dependency-free standard-library Model Context Protocol (MCP) server in `reference/mcp_server.py` supporting stdio JSON-RPC 2.0 framing, tools discovery (`get_workspace_summary`, `list_scopes`, `get_phrase`, `inspect_spectrum`, `analyze_audio`, `propose_phrase`), dynamic `music://` resources, and prompt workflows.
 - Enforce strict authority gate: models cannot possess mutation tokens or execute `confirm`, `correct`, or `restore`; attempts to mutate via MCP return `MUSICMCP-MCP-AUTHORITY_BOUNDARY_VIOLATION`.
