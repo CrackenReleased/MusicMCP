@@ -1,5 +1,15 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 21:15:00 — Expanded 10 Hz to 28 kHz spectrum checks and non-musical anomaly watcher
+
+Decision: Expand testable frequency ranges and spectrum inspection in Music MCP to encompass the full 10 Hz to 28,000 Hz (28 kHz) range, and implement a dedicated non-musical anomaly watcher in `reference/spectrum.py`.
+- Rationale: As formulated in the founding directive and architectural principles, machine analysis must ensure that what we intend is indeed all that is playing. Extra sounds exist beyond what is considered "music" (DC offset, flat-topping clipping, sample-to-sample click pops, 50/60/100/120 Hz mains hum, 10–20 Hz tactile infrasound, and 20k–28k Hz extended ultrasonic leakage). Without a dedicated watcher for non-musical sounds, an audio pipeline cannot verify that unintended acoustic energy is not being produced or ingested.
+- Frequency Band Decomposition: Evaluates 10 distinct bands: `deep_infrasonic` (0–10 Hz), `infrasonic_tactile` (10–20 Hz), `sub_bass` (20–60 Hz), `bass` (60–250 Hz), `low_mid` (250–500 Hz), `mid` (500–2000 Hz), `high_mid` (2000–6000 Hz), `high_treble` (6000–20000 Hz), `extended_ultrasonic` (20000–28000 Hz), and `extreme_ultrasonic` (>28000 Hz).
+- Watcher Anomaly Detection: Detects `DC_OFFSET` (>0.008 FS), `CLIPPING` (|s| >= 0.999), `CLICK_DISCONTINUITY` (jump > 0.40), `MAINS_HUM` (50, 60, 100, 120 Hz using 4096-point FFT with parabolic peak interpolation), `INFRASONIC_RUMBLE` (>5% in 0–20 Hz), and `ULTRASONIC_LEAK` (>2% in 20k–28k Hz).
+- Sample Rates: Supports 8,000 Hz to 192,000 Hz across `reference/analyzer.py` and `reference/spectrum.py`, allowing full Nyquist frequency representation up to and beyond 28 kHz ($F_s \ge 64$ kHz).
+- Pitch Mapping Boundary: Frequencies within standard musical octaves 0–9 map to symbolic `Note` names. Frequencies outside this range (e.g. 10 Hz tactile rumble or 28 kHz ultrasonic tones) map to `'rest'` in symbolic transcription and are surfaced via the `SpectrumReport`. Critical anomalies degrade analyzer uncertainty to `AMBIGUOUS`.
+- Verification: 12 new conformance tests in `tests/test_spectrum.py`. Full test suite passing (48/48 tests in 36.9s). Pure standard library Python 3.11+ only. Zero external dependencies.
+
 ## 2026-09-18 20:52:00 — Monophonic audio analyzer contract and isolated reference silo
 
 Decision: Implement the monophonic audio analyzer contract (`reference/ANALYZER_CONTRACT.md`) and reference implementation (`reference/analyzer.py`) adhering strictly to Python 3.11+ standard library only (`wave`, `struct`, `math`, `fractions`).

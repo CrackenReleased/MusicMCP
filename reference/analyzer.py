@@ -8,6 +8,7 @@ from uuid import uuid4
 import wave
 
 from reference.core import Diagnostic, MusicError, Note, Producer, UNCERTAINTY, phrase, text
+from reference.spectrum import SpectrumReport, watch_audio_bytes
 
 VERSION = '0.1.01'
 ANALYZER_PRODUCER = Producer(identity='reference-monophonic-analyzer', version=VERSION)
@@ -28,8 +29,10 @@ def _analyzer_fail(code: str, message: str, action: str = 'Supply valid 16-bit m
 
 
 def freq_to_pitch(f0: float, tuning_a4: float = 440.0) -> tuple[str, float]:
-    """Convert fundamental frequency in Hz to Western pitch name and cents deviation."""
-    if f0 <= 0:
+    """Convert fundamental frequency in Hz to Western pitch name and cents deviation across A0-C8.
+    Frequencies outside valid Western musical note octaves (0-9) map to 'rest'.
+    """
+    if f0 <= 0 or f0 < 16.0 or f0 > 20000.0:
         return 'rest', 0.0
     semitones = 12.0 * math.log2(f0 / tuning_a4) + 69.0
     midi = int(round(semitones))
@@ -40,7 +43,6 @@ def freq_to_pitch(f0: float, tuning_a4: float = 440.0) -> tuple[str, float]:
         return 'rest', 0.0
     pitch_str = f'{NOTE_NAMES[note_idx]}{octave}'
     return pitch_str, cents
-
 
 def quantize_duration(seconds: float, tempo_bpm: int) -> Fraction:
     """Convert duration in seconds to nearest exact Fraction in quarter-note units."""
@@ -66,10 +68,11 @@ class AnalysisResult:
     duration_seconds: float
     producer: Producer
     description: str
+    spectrum_report: SpectrumReport
 
 
 def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: float = 440.0) -> AnalysisResult:
-    """Analyze 16-bit PCM mono WAV audio and extract symbolic Notes with qualitative uncertainty."""
+    """Analyze 16-bit PCM mono WAV audio across full audible range (20Hz-20kHz) with anomaly watcher."""
     if type(data) is not bytes or not 44 <= len(data) <= 1024 * 1024:
         _analyzer_fail('INPUT_INVALID', 'Audio data must be a valid WAV byte stream of at most 1 MiB.')
     if type(tempo_bpm) is not int or not 30 <= tempo_bpm <= 300:
@@ -85,8 +88,8 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
                 _analyzer_fail('CHANNEL_UNSUPPORTED', f'Expected mono (1-channel) audio, got {channels} channels.')
             if width != 2:
                 _analyzer_fail('FORMAT_UNSUPPORTED', f'Expected 16-bit signed PCM audio, got {width * 8}-bit.')
-            if not (8000 <= rate <= 48000):
-                _analyzer_fail('SAMPLERATE_UNSUPPORTED', f'Sample rate must be 8000–48000 Hz, got {rate} Hz.')
+            if not (8000 <= rate <= 192000):
+                _analyzer_fail('SAMPLERATE_UNSUPPORTED', f'Sample rate must be 8000–192000 Hz, got {rate} Hz.')
             if nframes == 0:
                 _analyzer_fail('EMPTY_PAYLOAD', 'Audio file contains zero audio frames.')
             if nframes > rate * 30:
@@ -104,12 +107,16 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
     samples = [s / 32768.0 for s in struct.unpack(f"<{nframes}h", raw)]
     total_duration = nframes / float(rate)
 
-    # Frame-by-frame pitch extraction
-    frame_len = max(256, int(rate * 0.03))  # 30ms frame
-    hop_len = max(128, int(rate * 0.015))   # 15ms hop
-    min_lag = max(2, int(rate / 1050.0))    # ~C6 upper bound
-    max_lag = min(frame_len - 2, int(rate / 55.0))  # ~A1 lower bound
+    # 1. Run the Non-Musical Anomaly Watcher
+    spectrum_report = watch_audio_bytes(data)
 
+    # 2. Frame-by-frame pitch extraction over musical range (A0 27.5 Hz to C8 4186 Hz)
+    frame_len = max(512, int(rate * 0.08))  # 80ms window to resolve low frequencies down to A0
+    if frame_len > len(samples):
+        frame_len = len(samples)
+    hop_len = max(128, int(rate * 0.020))   # 20ms hop
+    min_lag = max(2, int(rate / 4200.0))    # ~C8 upper bound (4186 Hz)
+    max_lag = min(frame_len - 2, int(rate / 26.0))  # ~A0 lower bound (27.5 Hz)
     frames_pitch = []
     frames_conf = []
     frames_cents = []
@@ -122,7 +129,7 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
         rms = math.sqrt(energy / float(frame_len))
 
         # Silence threshold
-        if rms < 0.015:
+        if rms < 0.012:
             frames_voiced.append(False)
             frames_pitch.append('rest')
             frames_conf.append(1.0)
@@ -140,14 +147,12 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
                     best_lag = lag
 
             conf = best_corr / energy if energy > 1e-6 else 0.0
-            if conf < 0.45 or best_lag == 0:
-                # Ambiguous or unpitched noise
+            if conf < 0.40 or best_lag == 0:
                 frames_voiced.append(False)
                 frames_pitch.append('rest')
                 frames_conf.append(conf)
                 frames_cents.append(0.0)
             else:
-                # Sub-sample interpolation
                 p = 0.0
                 if min_lag < best_lag < max_lag:
                     denom = 2.0 * (corrs[best_lag - 1] - 2.0 * corrs[best_lag] + corrs[best_lag + 1])
@@ -166,7 +171,7 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
     if not frames_pitch:
         _analyzer_fail('EMPTY_PAYLOAD', 'No audio frames could be evaluated.')
 
-    # Group contiguous frames with matching pitch into notes
+    # Group contiguous frames into notes
     segments = []
     current_pitch = frames_pitch[0]
     current_count = 1
@@ -196,16 +201,13 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
     notes_list = []
     all_voiced_cents = []
     all_confs = []
-    voiced_seg_count = 0
 
     for p_name, duration_sec, confs, cents_list, voiced_list in segments:
-        # Filter out very short transient glitch rests (< 40ms) unless it is the only segment
         if p_name == 'rest' and duration_sec < 0.04 and len(segments) > 1:
             continue
         frac_dur = quantize_duration(duration_sec, tempo_bpm)
         notes_list.append(Note(pitch=p_name, duration=frac_dur))
         if any(voiced_list):
-            voiced_seg_count += 1
             all_voiced_cents.extend([c for c, v in zip(cents_list, voiced_list) if v])
             all_confs.extend(confs)
 
@@ -214,14 +216,15 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
 
     validated_notes = phrase(notes_list)
 
-    # Determine uncertainty
-    total_frames = len(frames_pitch)
+    # Determine uncertainty with spectral watcher inputs
     voiced_frame_count = sum(1 for v in frames_voiced if v)
 
     if voiced_frame_count == 0 or not all_voiced_cents:
         uncertainty = 'INSUFFICIENT_EVIDENCE'
+    elif any(a.severity == 'CRITICAL' for a in spectrum_report.anomalies):
+        # Critical anomalies (clipping, DC offset, clicks) compromise certainty
+        uncertainty = 'AMBIGUOUS'
     else:
-        # Variance of cents deviation (detecting vibrato or pitch drift)
         mean_cents = sum(all_voiced_cents) / float(len(all_voiced_cents))
         cents_var = sum((c - mean_cents) ** 2 for c in all_voiced_cents) / float(len(all_voiced_cents))
         cents_std = math.sqrt(cents_var)
@@ -231,13 +234,16 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
             uncertainty = 'AMBIGUOUS'
         elif mean_conf < 0.60:
             uncertainty = 'LOW'
-        elif mean_conf < 0.80 or cents_std > 20.0:
+        elif mean_conf < 0.80 or cents_std > 20.0 or bool(spectrum_report.anomalies):
             uncertainty = 'MEDIUM'
         else:
             uncertainty = 'HIGH'
 
-    desc = (f'Monophonic analysis ({len(validated_notes)} events, {total_duration:.2f}s, '
-            f'{tempo_bpm} BPM, uncertainty: {uncertainty})')
+    desc_parts = [
+        f'Monophonic analysis ({len(validated_notes)} events, {total_duration:.2f}s, {tempo_bpm} BPM, uncertainty: {uncertainty})',
+        spectrum_report.summary
+    ]
+    desc = ' | '.join(desc_parts)
 
     return AnalysisResult(
         notes=validated_notes,
@@ -245,7 +251,8 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
         tempo_bpm=tempo_bpm,
         duration_seconds=total_duration,
         producer=ANALYZER_PRODUCER,
-        description=desc
+        description=desc,
+        spectrum_report=spectrum_report
     )
 
 

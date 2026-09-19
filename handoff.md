@@ -1,5 +1,19 @@
 # Music MCP handoff
 
+## 2026-09-18 21:15:00 — Antigravity — 10 Hz to 28 kHz spectrum watcher and expanded frequency checks complete
+
+Scope completed: Expanded testable frequency ranges to 10 Hz – 28,000 Hz (28 kHz), implemented pure Python Audio Spectrum Inspector and Non-Musical Anomaly Watcher in `reference/spectrum.py`, expanded sample rate validation up to 192,000 Hz in `reference/analyzer.py`, integrated `SpectrumReport` and anomaly flagging into the analyzer, added adversarial audio fixtures in `tests/audio_fixtures.py`, and added 12 new conformance tests in `tests/test_spectrum.py`. All 48 test cases in the test suite pass cleanly.
+
+Verification:
+- `python -m unittest tests/test_spectrum.py`: 12/12 tests passed (10.0s).
+- `python -m unittest discover -s tests`: 48/48 tests passed (36.9s).
+- Verified full spectrum band decomposition across 10 bands from 0 Hz up to >28 kHz.
+- Verified non-musical anomaly watcher flags: `CLIPPING`, `DC_OFFSET`, `CLICK_DISCONTINUITY`, `MAINS_HUM` (60 Hz & 50 Hz), `INFRASONIC_RUMBLE` (10–20 Hz), and `ULTRASONIC_LEAK` (20k–28k Hz).
+- Verified high sample rate support up to 192 kHz (tested 96 kHz Nyquist at 48 kHz).
+- Verified analyzer marks critical anomalies as `AMBIGUOUS` uncertainty.
+
+Exact next action: Define the Model-Facing MCP Transport Contract (`reference/MCP_CONTRACT.md`) for exposing read, analysis, spectrum inspection, and proposal operations to external Ai models while strictly keeping mutation/authority sessions human-held on the host.
+
 ## 2026-09-18 20:52:00 — Antigravity — Monophonic analyzer contract and reference silo complete
 
 Scope completed: Defined the monophonic audio analyzer contract (`reference/ANALYZER_CONTRACT.md`), implemented the isolated standard-library reference analyzer (`reference/analyzer.py`), created synthetic WAV test fixtures (`tests/audio_fixtures.py`), and added 9 conformance test cases (`tests/test_analyzer.py`, `tests/test_architecture.py`). All 36 test cases pass. Created executable audio analysis demonstration (`reference/demo_analyzer.py`).
