@@ -1,5 +1,13 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 21:45:00 — Scoped Multi-Role Collaboration and Delegation Protocol
+
+Decision: Implement the Scoped Multi-Role Collaboration Silo (`reference/collaboration/COLLABORATION_CONTRACT.md`, `reference/collaboration/manager.py`).
+- Constitutional Invariant: Multi-artist collaboration must never blur who authorized what. Every published revision immutably records the actor, operation, scope, and reason.
+- Ownership & Delegation: Every musical scope has a registered primary owner. Primary owners can issue revocable `DelegationGrant`s for specific operations (`confirm`, `correct`, `restore`). Non-owners attempting unauthorized mutations are blocked by policy with `MUSICMCP-CORE-POLICY_BLOCKED`.
+- Zero-Core-Mutation Architecture: Uses the native `Workspace._policy` callback hook (`check_policy(candidate) -> bool`), keeping the core authority kernel untouched while enforcing role boundaries.
+- Verification: 5 conformance tests in `tests/test_collaboration.py` and live demonstration in `reference/demo_collaboration.py`. Full test suite passes (72/72 tests).
+
 ## 2026-09-18 21:40:00 — Host-Held Interactive Review Shell & Authority CLI Implementation
 
 Decision: Implement the Host-Held Interactive Review Shell and Command-Line Interface (`reference/cli.py`) adhering to pure Python 3.11+ standard library (`argparse`, `sys`, `pathlib`).

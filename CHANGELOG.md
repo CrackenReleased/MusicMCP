@@ -2,6 +2,11 @@
 
 ## 0.1.01 — 2026-09-18 — local experimental foundation refinement
 
+- Define Collaboration Contract in `reference/collaboration/COLLABORATION_CONTRACT.md` establishing multi-role authority matrices across disciplines (`COMPOSER`, `ARRANGER`, `PERFORMER`, `PRODUCER`, `EDITOR`), explicit scope ownership, and fine-grained delegation with instant revocation.
+- Implement `CollaborationManager` in `reference/collaboration/manager.py` integrating directly with `Workspace._policy` callback hook to enforce role boundaries and active delegation grants.
+- Add 5 collaboration conformance and security tests in `tests/test_collaboration.py` (total 72 passing tests).
+- Add executable multi-role collaboration demonstration in `reference/demo_collaboration.py`.
+
 - Implement Host-Held Interactive Review Shell and CLI in `reference/cli.py` providing an end-to-end interface for human artists holding privileged `AuthoritySession` on the host.
 - Provide CLI subcommands: `init` (project creation with scoped grants & locks), `info` (project summary & integrity audit), `inspect-audio` (10-band spectrum breakdown & non-musical anomaly report), `propose-audio` (audio ingestion & pitch proposal), `review` (interactive human confirmation or correction to new published Revision), `export` (MusicXML and MIDI export with REP-1 loss disclosure), `import` (MusicXML and MIDI ingestion with loss reporting), `history` (immutable revision audit log), and `restore` (historical revision restoration).
 - Add note string parser (`parse_notes_string`) supporting comma-separated and space-separated pitch-duration pairs (e.g. `'C4 1, E4 1/2, G4 1/2, rest 1'`).
