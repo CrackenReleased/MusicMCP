@@ -2,6 +2,11 @@
 
 ## 0.1.01 — 2026-09-18 — local experimental foundation refinement
 
+- Define Model-Facing MCP Transport Contract in `reference/MCP_CONTRACT.md` exposing read, analysis, spectrum inspection, and proposal operations to external Ai models while strictly preserving host-held human authority.
+- Implement dependency-free standard-library Model Context Protocol (MCP) server in `reference/mcp_server.py` supporting stdio JSON-RPC 2.0 framing, tools discovery (`get_workspace_summary`, `list_scopes`, `get_phrase`, `inspect_spectrum`, `analyze_audio`, `propose_phrase`), dynamic `music://` resources, and prompt workflows.
+- Enforce strict authority gate: models cannot possess mutation tokens or execute `confirm`, `correct`, or `restore`; attempts to mutate via MCP return `MUSICMCP-MCP-AUTHORITY_BOUNDARY_VIOLATION`.
+- Add 7 MCP transport conformance and security tests in `tests/test_mcp.py` (total 55 passing tests).
+- Add executable MCP server demonstration in `reference/demo_mcp.py` simulating an external model interaction workflow.
 - Expand frequency spectrum checks and monitoring to encompass the full 10 Hz to 28,000 Hz (28 kHz) range.
 - Implement dependency-free Audio Spectrum Inspector and Non-Musical Anomaly Watcher in `reference/spectrum.py` using pure Python Cooley-Tukey Radix-2 FFT and Hann-windowed frame evaluation.
 - Monitor 10 distinct acoustic bands: `deep_infrasonic` (0–10 Hz), `infrasonic_tactile` (10–20 Hz), `sub_bass` (20–60 Hz), `bass` (60–250 Hz), `low_mid` (250–500 Hz), `mid` (500–2k Hz), `high_mid` (2k–6k Hz), `high_treble` (6k–20k Hz), `extended_ultrasonic` (20k–28k Hz), and `extreme_ultrasonic` (>28 kHz).

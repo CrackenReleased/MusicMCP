@@ -1,5 +1,17 @@
 # Music MCP handoff
 
+## 2026-09-18 21:25:00 — Antigravity — Model-Facing MCP Transport Contract and Reference Implementation Complete
+
+Scope completed: Defined the Model-Facing MCP Transport Contract (`reference/MCP_CONTRACT.md`), implemented the dependency-free stdio JSON-RPC 2.0 MCP server (`reference/mcp_server.py`), created 7 conformance and security tests (`tests/test_mcp.py`), and created live demonstration (`reference/demo_mcp.py`). All 55 tests in the workspace pass cleanly.
+
+Verification:
+- `python -m unittest tests/test_mcp.py`: 7/7 tests passed in 0.06s.
+- `python -m unittest discover -s tests`: 55/55 tests passed in 38.2s.
+- `python -m reference.demo_mcp`: Verified full MCP handshake, tool listing, authoritative phrase reading, 10 Hz – 28 kHz spectrum inspection, uncommitted proposal creation, and rejection of adversarial mutation attempt.
+- Verified strict authority isolation: Model cannot confirm, correct, or restore phrases.
+
+Exact next action: Implement MusicXML and MIDI format adapters (`reference/adapters/`) to allow bi-directional conversion between standard musical files and the reference symbolic Note/phrase format.
+
 ## 2026-09-18 21:15:00 — Antigravity — 10 Hz to 28 kHz spectrum watcher and expanded frequency checks complete
 
 Scope completed: Expanded testable frequency ranges to 10 Hz – 28,000 Hz (28 kHz), implemented pure Python Audio Spectrum Inspector and Non-Musical Anomaly Watcher in `reference/spectrum.py`, expanded sample rate validation up to 192,000 Hz in `reference/analyzer.py`, integrated `SpectrumReport` and anomaly flagging into the analyzer, added adversarial audio fixtures in `tests/audio_fixtures.py`, and added 12 new conformance tests in `tests/test_spectrum.py`. All 48 test cases in the test suite pass cleanly.

@@ -1,5 +1,14 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 21:25:00 — Model-Facing MCP Transport Contract and Reference Implementation
+
+Decision: Implement the Model-Facing Model Context Protocol (MCP) Transport Contract (`reference/MCP_CONTRACT.md`) and standard-library reference server (`reference/mcp_server.py`).
+- Constitutional Boundary: In accordance with Founding Directive §1 and §4, the model MUST NOT own authoritative state or possess mutation permissions. The MCP server operates as a read-and-proposal gateway only. Privileged `AuthoritySession` capabilities remain strictly held on the host.
+- Tool Inventory: Models discover and call safe read/proposal tools: `get_workspace_summary`, `list_scopes`, `get_phrase`, `inspect_spectrum` (10 Hz – 28 kHz checks), `analyze_audio` (monophonic pitch extraction & quantization), and `propose_phrase` (records uncommitted proposals with `origin="interpreted"` or `origin="generated"`).
+- Dynamic Resources: Exposes `music://workspace/summary`, `music://workspace/scopes/{scope}/phrase`, and `music://workspace/scopes/{scope}/history`.
+- Boundary Enforcement: Any attempt to invoke mutation operations (`confirm`, `correct`, `restore`, `acquire_session`) via JSON-RPC is denied at the transport gate with diagnostic code `MUSICMCP-MCP-AUTHORITY_BOUNDARY_VIOLATION`.
+- Conformance & Demo: Added 7 conformance tests in `tests/test_mcp.py` covering protocol initialization, tool listing, phrase reading, 10Hz-28kHz spectrum inspection over MCP, non-mutating proposals, and adversarial mutation attack rejections. Full test suite passes (55/55 tests in 38.2s). Added live demonstration in `reference/demo_mcp.py`.
+
 ## 2026-09-18 21:15:00 — Expanded 10 Hz to 28 kHz spectrum checks and non-musical anomaly watcher
 
 Decision: Expand testable frequency ranges and spectrum inspection in Music MCP to encompass the full 10 Hz to 28,000 Hz (28 kHz) range, and implement a dedicated non-musical anomaly watcher in `reference/spectrum.py`.
