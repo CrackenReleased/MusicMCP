@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music MCP · Local Visualizer & Authority Review Deck</title>
+  <style>
+    :root {
+      --bg-base: #090d16;
+      --bg-surface: #111827;
+      --bg-surface-elevated: #1f293d;
+      --border-subtle: #374151;
+      --border-accent: #38bdf8;
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.25);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.25);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.25);
+      --rose: #f43f5e;
+      --rose-glow: rgba(244, 63, 94, 0.25);
+      --indigo: #6366f1;
+      --purple: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      padding: 1.5rem;
+      min-height: 100vh;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 1.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 2.25rem;
+      height: 2.25rem;
+      background: linear-gradient(135deg, var(--cyan), var(--indigo));
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #fff;
+      font-size: 1.2rem;
+      box-shadow: 0 0 16px var(--cyan-glow);
+    }
+
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-cyan { background: rgba(6, 182, 212, 0.15); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.3); }
+    .badge-emerald { background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-rose { background: rgba(244, 63, 94, 0.15); color: var(--rose); border: 1px solid rgba(244, 63, 94, 0.3); }
+    .badge-indigo { background: rgba(99, 102, 241, 0.15); color: var(--indigo); border: 1px solid rgba(99, 102, 241, 0.3); }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: 340px 1fr 380px;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 1200px) {
+      .grid-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 0.75rem;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Spectrum bars */
+    .spectrum-band {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .spectrum-band-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      background: #1f2937;
+      border-radius: 9999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.3s ease;
+    }
+
+    .anomaly-box {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px dashed var(--border-subtle);
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    /* Phrases and Notes */
+    .scope-box {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.5rem;
+      padding: 0.85rem;
+      margin-bottom: 1rem;
+    }
+
+    .scope-title-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .note-roll {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.5rem;
+    }
+
+    .note-pill {
+      background: #111827;
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.375rem;
+      padding: 0.35rem 0.55rem;
+      font-size: 0.78rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .note-pitch {
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .note-dur {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    /* Proposal Review Deck */
+    .proposal-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .proposal-card.active {
+      border-color: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan-glow);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: 0.375rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-emerald {
+      background: var(--emerald);
+      color: #064e3b;
+    }
+    .btn-emerald:hover { background: #34d399; }
+
+    .btn-cyan {
+      background: var(--cyan);
+      color: #083344;
+    }
+    .btn-cyan:hover { background: #38bdf8; }
+
+    .btn-subtle {
+      background: #374151;
+      color: #e5e7eb;
+    }
+    .btn-subtle:hover { background: #4b5563; }
+
+    input, select, textarea {
+      background: #0f172a;
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.375rem;
+      color: var(--text-primary);
+      padding: 0.45rem 0.65rem;
+      font-size: 0.8rem;
+      width: 100%;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan-glow);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      font-size: 0.85rem;
+      display: none;
+      z-index: 100;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">&#9835;</div>
+      <div>
+        <h1 class="brand-title">Music MCP Visualizer</h1>
+        <p class="brand-subtitle">Host-Held Authority Review Deck · Python 3.11+ Reference Silo</p>
+      </div>
+    </div>
+    <div class="header-status">
+      <span id="rev-badge" class="badge badge-cyan">Revision 0</span>
+      <span id="lock-badge" class="badge badge-indigo">0 Locks</span>
+      <button class="btn btn-subtle" onclick="refreshAll()">&#x21bb; Refresh</button>
+    </div>
+  </header>
+
+  <main class="grid-container">
+    
+    <!-- LEFT PANEL: 10-Band Spectrum & Acoustic Anomaly Watcher -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">&#128266; Spectrum Inspector</h2>
+        <span class="badge badge-cyan">10 Hz – 28+ kHz</span>
+      </div>
+
+      <div style="font-size: 0.75rem; color: var(--text-secondary);">
+        Real-time acoustic energy decomposition & non-musical anomaly protection.
+      </div>
+
+      <div id="spectrum-bars-container">
+        <!-- Dynamic Spectrum Bands -->
+      </div>
+
+      <div class="card-header" style="margin-top: 0.5rem;">
+        <h3 class="card-title" style="font-size: 0.85rem;">Anomaly Watcher</h3>
+        <span id="anomaly-status-badge" class="badge badge-emerald">CLEAN</span>
+      </div>
+      <div id="anomalies-list" class="anomaly-box">
+        No non-musical anomalies detected in active audio evidence.
+      </div>
+    </section>
+
+    <!-- MIDDLE PANEL: Authoritative Score & Phrasing -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">&#127926; Authoritative State</h2>
+        <span class="badge badge-emerald">Published Revisions</span>
+      </div>
+
+      <div id="phrases-container">
+        <div style="color: var(--text-muted); font-size: 0.85rem;">Loading authoritative phrases...</div>
+      </div>
+
+      <!-- Revision History List -->
+      <div class="card-header" style="margin-top: 1rem;">
+        <h3 class="card-title" style="font-size: 0.85rem;">Revision Provenance DAG</h3>
+      </div>
+      <div id="history-container" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 200px; overflow-y: auto;">
+        <!-- History items -->
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: Human Authority Review Deck -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">&#9878;&#65039; Authority Review Deck</h2>
+        <span class="badge badge-amber">Human Review</span>
+      </div>
+
+      <div style="font-size: 0.75rem; color: var(--text-secondary);">
+        Review candidate proposals, audit machine uncertainty, or execute authorized corrections.
+      </div>
+
+      <!-- Uncommitted Proposals List -->
+      <div id="proposals-container">
+        <div style="color: var(--text-muted); font-size: 0.85rem;">Scanning uncommitted proposals...</div>
+      </div>
+
+      <!-- Human Action Forms -->
+      <div style="border-top: 1px solid var(--border-subtle); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem;">
+        <h3 style="font-size: 0.82rem; color: var(--text-primary);">Human Correction & Mutation</h3>
+        
+        <input type="text" id="correct-proposal-id" placeholder="Target Proposal ID" />
+        <input type="text" id="correct-notes-input" placeholder="Notes (e.g. C4 1, E4 1/2, G4 1/2)" />
+        <input type="text" id="action-reason-input" placeholder="Attributable Reason for Modification" />
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+          <button class="btn btn-emerald" onclick="handleConfirm()">Confirm Proposal</button>
+          <button class="btn btn-cyan" onclick="handleCorrect()">Submit Correction</button>
+        </div>
+      </div>
+
+      <!-- Request Generated Alternative -->
+      <div style="border-top: 1px solid var(--border-subtle); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem;">
+        <h3 style="font-size: 0.82rem; color: var(--text-primary);">Request Generated Alternative</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
+          <input type="text" id="alt-source-scope" placeholder="Source Scope" value="melody" />
+          <input type="text" id="alt-target-scope" placeholder="Target Scope" value="harmony" />
+        </div>
+        <select id="alt-type-select">
+          <option value="HARMONY_THIRD_ABOVE">Diatonic 3rd Above</option>
+          <option value="HARMONY_THIRD_BELOW">Diatonic 3rd Below</option>
+          <option value="OCTAVE_DOUBLING_BELOW">Octave Doubling Below</option>
+          <option value="ROOT_BASS_PEDAL">Root Bass Pedal</option>
+        </select>
+        <button class="btn btn-subtle" onclick="handleGenerateAlternative()">+ Propose Generated Alternative</button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let currentRevision = 0;
+    let cachedProposals = [];
+
+    function showToast(msg, isError = false) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.style.borderColor = isError ? 'var(--rose)' : 'var(--emerald)';
+      t.style.color = isError ? 'var(--rose)' : 'var(--emerald)';
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    async function fetchProject() {
+      try {
+        const res = await fetch('/api/project');
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error?.message || 'Failed to fetch project');
+        
+        currentRevision = data.revision;
+        document.getElementById('rev-badge').innerText = `Revision ${data.revision}`;
+        document.getElementById('lock-badge').innerText = `${data.locks.length} Locks`;
+
+        renderPhrases(data.phrases);
+        renderHistory(data.history);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    function renderPhrases(phrases) {
+      const container = document.getElementById('phrases-container');
+      if (!phrases || phrases.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No phrases published yet. Confirm or correct a proposal to begin.</div>';
+        return;
+      }
+
+      container.innerHTML = phrases.map(p => `
+        <div class="scope-box">
+          <div class="scope-title-bar">
+            <div>
+              <span style="font-weight: 700; color: var(--text-primary);">${p.scope}</span>
+              <span class="badge ${p.origin === 'human' ? 'badge-emerald' : (p.origin === 'generated' ? 'badge-purple' : 'badge-cyan')}" style="margin-left: 0.4rem;">
+                origin: ${p.origin}
+              </span>
+            </div>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Rev ${p.number} · by ${p.actor}</span>
+          </div>
+          <div class="note-roll">
+            ${p.notes.map(n => `
+              <div class="note-pill">
+                <span class="note-pitch">${n.pitch}</span>
+                <span class="note-dur">${n.duration}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem;">
+            Reason: "${p.reason}"
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderHistory(history) {
+      const container = document.getElementById('history-container');
+      if (!history || history.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-muted); font-size: 0.75rem;">No historical revisions.</div>';
+        return;
+      }
+
+      container.innerHTML = history.slice().reverse().map(rev => `
+        <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 0.4rem 0.6rem; border-radius: 0.375rem; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong>Rev ${rev.number}</strong> [${rev.scope}] <em>${rev.operation}</em> by ${rev.actor}
+            <div style="color: var(--text-muted); font-size: 0.68rem;">${rev.notes.map(n => n.pitch).join(' ')}</div>
+          </div>
+          <button class="btn btn-subtle" style="padding: 0.2rem 0.5rem; font-size: 0.68rem;" onclick="handleRestore(${rev.number})">Restore</button>
+        </div>
+      `).join('');
+    }
+
+    async function fetchProposals() {
+      try {
+        const res = await fetch('/api/proposals');
+        const data = await res.json();
+        if (!data.ok) return;
+
+        cachedProposals = data.proposals || [];
+        const container = document.getElementById('proposals-container');
+        if (cachedProposals.length === 0) {
+          container.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No pending proposals in workspace.</div>';
+          return;
+        }
+
+        container.innerHTML = cachedProposals.map(prop => {
+          const uncColor = prop.uncertainty === 'LOW' ? 'badge-emerald' : (prop.uncertainty === 'MEDIUM' ? 'badge-amber' : 'badge-rose');
+          const origBadge = prop.origin === 'generated' ? 'badge-indigo' : 'badge-cyan';
+          return `
+            <div class="proposal-card" onclick="selectProposal('${prop.id}')" id="card-${prop.id}">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; font-size: 0.85rem;">Scope: ${prop.scope}</span>
+                <div>
+                  <span class="badge ${origBadge}">origin: ${prop.origin}</span>
+                  <span class="badge ${uncColor}">unc: ${prop.uncertainty}</span>
+                </div>
+              </div>
+              <div class="note-roll">
+                ${prop.notes.map(n => `
+                  <div class="note-pill">
+                    <span class="note-pitch">${n.pitch}</span>
+                    <span class="note-dur">${n.duration}</span>
+                  </div>
+                `).join('')}
+              </div>
+              <div style="font-size: 0.7rem; color: var(--text-secondary); display: flex; justify-content: space-between;">
+                <span>ID: ${prop.id.slice(0, 8)}...</span>
+                <span>Mode: ${prop.mode}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        if (cachedProposals.length > 0) {
+          selectProposal(cachedProposals[0].id);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function selectProposal(propId) {
+      document.querySelectorAll('.proposal-card').forEach(c => c.classList.remove('active'));
+      const activeCard = document.getElementById(`card-${propId}`);
+      if (activeCard) activeCard.classList.add('active');
+
+      document.getElementById('correct-proposal-id').value = propId;
+      const prop = cachedProposals.find(p => p.id === propId);
+      if (prop) {
+        document.getElementById('correct-notes-input').value = prop.notes.map(n => `${n.pitch} ${n.duration}`).join(', ');
+        if (prop.evidence_id) {
+          fetchSpectrum(prop.evidence_id);
+        }
+      }
+    }
+
+    async function fetchSpectrum(evidenceId) {
+      try {
+        const res = await fetch(`/api/spectrum?evidence_id=${evidenceId}`);
+        const data = await res.json();
+        if (!data.ok || !data.report) return;
+
+        const report = data.report;
+        renderSpectrum(report);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderSpectrum(report) {
+      const container = document.getElementById('spectrum-bars-container');
+      const bandColors = {
+        'deep_infrasonic': '#ef4444',
+        'infrasonic_tactile': '#f97316',
+        'sub_bass': '#f59e0b',
+        'bass': '#10b981',
+        'low_mid': '#06b6d4',
+        'mid': '#3b82f6',
+        'high_mid': '#6366f1',
+        'high_treble': '#8b5cf6',
+        'extended_ultrasonic': '#ec4899',
+        'extreme_ultrasonic': '#f43f5e'
+      };
+
+      const friendlyNames = {
+        'deep_infrasonic': '0-10 Hz (DC / Drift)',
+        'infrasonic_tactile': '10-20 Hz (Tactile Rumble)',
+        'sub_bass': '20-60 Hz (Sub Bass)',
+        'bass': '60-250 Hz (Musical Bass)',
+        'low_mid': '250-500 Hz (Low Mid Warmth)',
+        'mid': '500-2k Hz (Mid Core Presence)',
+        'high_mid': '2k-6k Hz (High Mid Attack)',
+        'high_treble': '6k-20k Hz (High Treble Air)',
+        'extended_ultrasonic': '20k-28k Hz (Ext. Ultrasonic)',
+        'extreme_ultrasonic': '>28k Hz (Extreme Ultrasonic)'
+      };
+
+      container.innerHTML = Object.entries(report.band_energies).map(([band, energy]) => {
+        const pct = Math.min(100, Math.round(energy * 100 * 3)); // visual amplification for small bands
+        const color = bandColors[band] || '#38bdf8';
+        const label = friendlyNames[band] || band;
+        return `
+          <div class="spectrum-band">
+            <div class="spectrum-band-meta">
+              <span>${label}</span>
+              <span>${(energy * 100).toFixed(2)}%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width: ${pct}%; background-color: ${color};"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Render anomalies
+      const anomalyBadge = document.getElementById('anomaly-status-badge');
+      const anomalyBox = document.getElementById('anomalies-list');
+
+      if (report.anomalies && report.anomalies.length > 0) {
+        anomalyBadge.className = 'badge badge-rose';
+        anomalyBadge.innerText = `${report.anomalies.length} ALERTS`;
+        anomalyBox.innerHTML = report.anomalies.map(a => `
+          <div style="margin-bottom: 0.35rem; color: ${a.severity === 'CRITICAL' ? 'var(--rose)' : 'var(--amber)'};">
+            &#9888; <strong>${a.kind}</strong>: ${a.description}
+          </div>
+        `).join('');
+      } else {
+        anomalyBadge.className = 'badge badge-emerald';
+        anomalyBadge.innerText = 'CLEAN SIGNAL';
+        anomalyBox.innerHTML = 'Zero non-musical acoustic anomalies detected. Signal strictly within musical bounds.';
+      }
+    }
+
+    async function handleConfirm() {
+      const propId = document.getElementById('correct-proposal-id').value;
+      const reason = document.getElementById('action-reason-input').value || 'Authorized human confirmation via Visualizer Deck';
+      if (!propId) return showToast('Please select a proposal to confirm', true);
+
+      try {
+        const res = await fetch('/api/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ proposal_id: propId, expected_revision: currentRevision, reason })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error?.message || 'Confirmation failed');
+
+        showToast(`[OK] Published Revision ${data.revision.number} in scope '${data.revision.scope}'`);
+        refreshAll();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function handleCorrect() {
+      const propId = document.getElementById('correct-proposal-id').value;
+      const notes = document.getElementById('correct-notes-input').value;
+      const reason = document.getElementById('action-reason-input').value || 'Authorized human correction via Visualizer Deck';
+      if (!propId || !notes) return showToast('Please supply proposal ID and corrected notes', true);
+
+      try {
+        const res = await fetch('/api/correct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ proposal_id: propId, notes, expected_revision: currentRevision, reason })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error?.message || 'Correction failed');
+
+        showToast(`[OK] Published Corrected Revision ${data.revision.number} in scope '${data.revision.scope}'`);
+        refreshAll();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function handleRestore(revNum) {
+      const reason = prompt(`Attributable reason for restoring Revision ${revNum}:`, 'Restoring historical revision via Visualizer Deck');
+      if (!reason) return;
+
+      try {
+        const res = await fetch('/api/restore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ revision_number: revNum, expected_revision: currentRevision, reason })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error?.message || 'Restore failed');
+
+        showToast(`[OK] Restored Revision ${revNum} as new Revision ${data.revision.number}`);
+        refreshAll();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function handleGenerateAlternative() {
+      const source_scope = document.getElementById('alt-source-scope').value;
+      const target_scope = document.getElementById('alt-target-scope').value;
+      const alt_type = document.getElementById('alt-type-select').value;
+      const reason = `Requested ${alt_type} generated alternative via Visualizer Deck`;
+
+      try {
+        const res = await fetch('/api/propose_alternative', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source_scope, target_scope, alt_type, requested_by: 'lead-composer', reason })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error?.message || 'Generation failed');
+
+        showToast(`[OK] Generated proposal in scope '${data.proposal.scope}' (origin: generated)`);
+        refreshAll();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    function refreshAll() {
+      fetchProject();
+      fetchProposals();
+    }
+
+    // Initial load
+    refreshAll();
+    setInterval(refreshAll, 5000); // Polling update every 5 seconds
+  </script>
+</body>
+</html>

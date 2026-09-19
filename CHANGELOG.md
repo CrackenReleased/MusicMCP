@@ -2,6 +2,13 @@
 
 ## 0.1.01 — 2026-09-18 — local experimental foundation refinement
 
+- Define Visualizer Preview Contract in `reference/preview/PREVIEW_CONTRACT.md` establishing loopback security boundary (127.0.0.1), REST inspection endpoints, and interactive host authority review.
+- Implement `PreviewServer` in `reference/preview/server.py` with multi-threaded loopback HTTP server, REST endpoints (`/api/project`, `/api/spectrum`, `/api/proposals`, `/api/alternatives`, `/api/confirm`, `/api/correct`, `/api/restore`, `/api/propose_alternative`), and rich single-page visualizer interface in `reference/preview/static/index.html`.
+- Provide interactive visual inspection of 10-band acoustic frequency spectrum (0 Hz to >28 kHz), non-musical anomaly protection (mains hum, infrasonic rumble, ultrasonic leakage, clipping, DC offset), and active phrases by scope.
+- Enforce immutable provenance preservation during interactive review: confirming a generated proposal preserves `origin="generated"` in the published revision.
+- Add 10 preview conformance and security tests in `tests/test_preview.py` (total 91 passing tests in 44.2s).
+- Add live executable visualizer demonstration in `reference/demo_preview.py`.
+
 - Define Alternatives Contract in `reference/alternatives/ALTERNATIVES_CONTRACT.md` establishing explicit request requirements, immutable `origin="generated"` provenance, and non-destructive arrangement isolation.
 - Implement `AlternativeGenerator` in `reference/alternatives/generator.py` supporting diatonic harmonies (`HARMONY_THIRD_ABOVE`, `HARMONY_THIRD_BELOW`), octave doublings, root bass pedals, and cadential resolutions.
 - Enforce provenance invariant: accepting a generated proposal in `Workspace` preserves `origin="generated"` in the published `Revision` without converting machine output to human authorship.

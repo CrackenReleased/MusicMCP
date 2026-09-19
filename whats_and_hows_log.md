@@ -1,5 +1,15 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 22:07:00 — Local Interactive Visualizer Preview and Host Authority Review Deck
+
+Decision: Implement the Local Interactive Visualizer Preview Silo (`reference/preview/PREVIEW_CONTRACT.md`, `reference/preview/server.py`, `reference/preview/static/index.html`).
+- Rationale: Human authority review is the constitutional keystone of Music MCP. A terminal CLI is essential for host automation, but an accessible, zero-dependency visual interface allows musicians to immediately inspect audio evidence, 10-band spectrum analysis, non-musical anomalies, extracted pitch timelines, and candidate proposals side-by-side.
+- Localhost Security Boundary: Binds strictly to `127.0.0.1` (loopback). Network calls from remote interfaces are strictly rejected with 403 `SECURITY_VIOLATION`. The server never exposes raw unauthenticated tokens over external networks.
+- Full Acoustic Spectrum Visibility: Directly calls `watch_audio_bytes` to expose 10 frequency bands from 0 Hz to >28 kHz, flagging non-musical anomalies (clipping, DC offset, 50/60/100/120 Hz hum, 10-20 Hz rumble, 20k-28k Hz ultrasonic leak) before the artist commits musical changes.
+- Provenance Invariant Safeguard: When accepting a generated alternative through the visualizer, `origin="generated"` is preserved in the published `Revision` without converting machine output into human authorship.
+- Zero-Dependency Standard Library: Implemented purely with Python 3.11+ `http.server`, `socketserver`, `json`, `urllib.parse`, and vanilla HTML5/CSS/JS. Zero Node/npm, zero external Python libraries, zero CDN scripts.
+- Verification: 10 conformance and security tests in `tests/test_preview.py` and live demonstration in `reference/demo_preview.py`. Full test suite passes (91/91 tests in 44.2s).
+
 ## 2026-09-18 21:55:00 — Requested Generated Alternatives and Provenance Protection
 
 Decision: Implement the Requested Generated Alternatives Silo (`reference/alternatives/ALTERNATIVES_CONTRACT.md`, `reference/alternatives/generator.py`).
