@@ -1,5 +1,15 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 21:35:00 — Durable Evidence and Revision Storage Silo with Content-Addressable Integrity
+
+Decision: Implement the isolated Durable Storage Silo (`reference/storage/STORAGE_CONTRACT.md`, `reference/storage/sqlite_store.py`) using pure Python 3.11+ standard library (`sqlite3`, `hashlib`, `json`, `pathlib`).
+- Rationale: As documented in `goals_and_dreams.md` and the Founding Directive, the in-process authority kernel discards state upon process termination. True musical stewardship requires sessions and provenance to survive process exit and power failure without corruption.
+- Schema & ACID Durability: Uses SQLite in WAL mode with synchronous=NORMAL and foreign_keys=ON. Enforces strict transactional atomicity (`with conn:`) across `schema_meta`, `evidence`, `observations`, `proposals`, `revisions`, `grants`, and `constraints`.
+- Content-Addressable Evidence: Raw performance WAV bytes are stored alongside their computed SHA-256 digests. Tampered evidence bytes are detected immediately and cause `EVIDENCE_CORRUPTED` fail-closed rejection upon audit or load.
+- Revision Chain Continuity: Verifies that revision 1 has parent 0, and each subsequent revision `r_i` has `parent == r_{i-1}.number`. Any divergence raises `REVISION_CHAIN_BROKEN`.
+- Authority Boundary: The storage engine is a persistence facilitator only. Restoring state creates genuine `Workspace` instances and re-binds host `AuthoritySession` tokens; the storage engine cannot forge revisions or grant unverified permissions.
+- Verification: 5 conformance tests in `tests/test_storage.py` and live demonstration in `reference/demo_storage.py`. Full test suite passes (65/65 tests).
+
 ## 2026-09-18 21:30:00 — MusicXML and MIDI Format Adapters with Explicit Loss Disclosure
 
 Decision: Implement isolated MusicXML and MIDI format adapters adhering to SPECIFICATION REP-1 and zero-dependency Python 3.11+ standard library.

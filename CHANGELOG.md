@@ -2,6 +2,11 @@
 
 ## 0.1.01 — 2026-09-18 — local experimental foundation refinement
 
+- Define Durable Storage Contract in `reference/storage/STORAGE_CONTRACT.md` establishing content-addressable SHA-256 evidence storage, complete provenance preservation, and SQLite WAL atomic transactions.
+- Implement pure Python SQLite Storage Engine in `reference/storage/sqlite_store.py` (`SqliteStorageEngine`) supporting atomic `save_workspace`, `load_workspace`, and deep `verify_integrity` (checking SQLite PRAGMA, schema version, evidence SHA-256 digests, and revision parent-chain continuity).
+- Add 5 storage conformance and adversarial corruption tests in `tests/test_storage.py` (total 65 passing tests).
+- Add executable durable storage demonstration in `reference/demo_storage.py` demonstrating state survival across workspace destruction, restoration from disk, and continuation of human authority lifecycle.
+
 - Define Format Adapters Contract in `reference/adapters/ADAPTER_CONTRACT.md` establishing SPECIFICATION REP-1 loss disclosure and strict isolation from host authority.
 - Implement MusicXML 3.1 Partwise adapter (`reference/adapters/musicxml.py`) supporting bi-directional conversion (`phrase_to_musicxml` and `musicxml_to_phrase`) with explicit `LossReport` disclosing omitted layout, formatting, dynamics, and polyphony details.
 - Implement Standard MIDI File (SMF Format 0) adapter (`reference/adapters/midi.py`) with pure Python variable-length quantity (VLQ) encoder/decoder, supporting bi-directional conversion (`phrase_to_midi` and `midi_to_phrase`) with explicit `LossReport` disclosing velocity standardization, enharmonic flattening, and channel assignments.

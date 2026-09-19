@@ -1,5 +1,19 @@
 # Music MCP handoff
 
+## 2026-09-18 21:35:00 — Antigravity — Durable Evidence and Revision Storage Silo Complete
+
+Scope completed: Defined the Storage Contract (`reference/storage/STORAGE_CONTRACT.md`), implemented the pure standard-library SQLite Storage Engine (`reference/storage/sqlite_store.py`), added 5 conformance and corruption tests (`tests/test_storage.py`), and created live demonstration (`reference/demo_storage.py`). All 65 tests in the workspace pass cleanly.
+
+Verification:
+- `python -m unittest tests/test_storage.py`: 5/5 tests passed in 0.046s.
+- `python -m unittest discover -s tests`: 65/65 tests passed.
+- `python -m reference.demo_storage`: Verified saving state to `.musicmcp` file, verifying cryptographic SHA-256 and PRAGMA integrity, discarding in-memory state, restoring fresh workspace, and executing Revision 2 human correction.
+- Verified corruption fail-closed handling: tampered evidence bytes raise `MUSICMCP-STORAGE-EVIDENCE_CORRUPTED`.
+- Verified revision chain continuity: tampered revision parent raises `MUSICMCP-STORAGE-REVISION_CHAIN_BROKEN`.
+- Verified authority boundary: Storage engine cannot issue tokens or bypass human confirmation.
+
+Exact next action: Implement Interactive Human Authority CLI / Host Shell (`reference/cli.py`) for host-held phrase review, spectrum inspection, and approval.
+
 ## 2026-09-18 21:30:00 — Antigravity — MusicXML and MIDI Format Adapters Silo Complete
 
 Scope completed: Defined the Format Adapters Contract (`reference/adapters/ADAPTER_CONTRACT.md`), implemented pure standard-library MusicXML 3.1 Partwise adapter (`reference/adapters/musicxml.py`), implemented pure standard-library SMF Format 0 MIDI adapter (`reference/adapters/midi.py`), added 5 conformance tests (`tests/test_adapters.py`), and created live demonstration (`reference/demo_adapters.py`). All 60 tests in the workspace pass cleanly.
