@@ -1,5 +1,9 @@
 # Music MCP handoff
 
+## 2026-09-18 22:18:00 — Antigravity — Acoustic Guidance Added to PHILOSOPHY.md
+
+Scope completed: Added "Guidance: Acoustic experience versus technical measurement" to `PHILOSOPHY.md` and recorded rationale in `whats_and_hows_log.md`. Establishes that technical purity is subordinate to human experience; natural acoustic phenomena (sympathetic resonance, natural string harmonics, room modes) are respected, and the watcher focuses strictly on guarding against non-musical defects.
+
 ## 2026-09-18 22:07:00 — Antigravity — Visualizer Preview & Local Authority Review Deck Complete
 
 Scope completed: Defined the Preview Contract (`reference/preview/PREVIEW_CONTRACT.md`), implemented the multi-threaded loopback HTTP Preview Server (`reference/preview/server.py`), built the modern single-page visualizer interface (`reference/preview/static/index.html`), added 10 conformance and security tests (`tests/test_preview.py`), and created live demonstration (`reference/demo_preview.py`). All 91 tests in the workspace pass cleanly.

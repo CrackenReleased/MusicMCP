@@ -32,6 +32,16 @@ The project is model-agnostic and application-agnostic. MCP exposes capabilities
 
 Failures should stay within their capability's boundary. The project must survive changing providers, policies, licenses, maintainers, and models. Documentation and executable contracts make continuity possible without an indispensable founder or developer.
 
+## Guidance: Acoustic experience versus technical measurement
+
+Devices and analyzers should be mathematically and technically sound, but technical purity must never be confused with musical truth.
+
+Acoustic instruments and physical spaces interact through sympathetic resonance, natural harmonics, and room modes. If an artist strikes Middle C on a piano with other octave dampers lifted, or plays a natural harmonic at a guitar node, the resulting overtone series, room reflections, and reverberant decay create an acoustic bloom that measures differently on electronic sensors than it is experienced by a human listener.
+
+Experience is distinct from mechanical measurement. An expressive performance may carry micro-inflections, vibrato, or room interaction that measure as "pitchy" or technically impure on a meter, yet sound compelling, moving, and true in person. Conversely, a performance that measures mathematically pure can feel sterile, dead, or unnatural to the artist.
+
+The watcher's responsibility is to guard against unintended, non-musical defects—such as digital clipping, DC voltage drift, electrical mains hum, and ultrasonic converter leakage—not to sanitize natural acoustic resonance or second-guess artistic expression. When a human says something felt right or sounded wrong, human experience and intent govern.
+
 ## Apply the constitution deliberately
 
 [SPECIFICATION.md](SPECIFICATION.md) defines normative behavior; [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md) translates these principles into engineering obligations. This constitution is not a claim that every intended capability exists. v0.1.0 is an experimental in-process reference core, not an audio transcription product or MCP server.

@@ -1,5 +1,12 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 22:18:00 — Guidance: Acoustic Experience Versus Technical Measurement
+
+Decision: Add explicit acoustic guidance to `PHILOSOPHY.md` distinguishing physical/psychoacoustic experience from mechanical electronic measurement.
+- Rationale: Real instruments and physical spaces generate sympathetic resonance (e.g. un-damped piano octave resonance), natural harmonics (guitar node flageolets), and room mode blooms that create complex overtone interactions. These phenomena alter electronic sensor readings and can register as "pitchy" or impure on mechanical meters while sounding deeply musical, resonant, and emotionally true to human listeners.
+- Guidance Status: Framed deliberately as foundational guidance rather than a rigid dogmatic tenet, honoring human perceptual experience, room handling, and artistic presentation over mathematical sterility.
+- Watcher Boundary Refinement: The acoustic watcher's duty is strictly to identify non-musical, unintended defects (clipping, DC offset, electrical hum, ultrasonic converter leakage), never to sanitize natural resonance or second-guess an artist's judgment. Human intent and perceived experience govern over mechanical metrics.
+
 ## 2026-09-18 22:07:00 — Local Interactive Visualizer Preview and Host Authority Review Deck
 
 Decision: Implement the Local Interactive Visualizer Preview Silo (`reference/preview/PREVIEW_CONTRACT.md`, `reference/preview/server.py`, `reference/preview/static/index.html`).
