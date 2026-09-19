@@ -2,6 +2,12 @@
 
 ## 0.1.01 — 2026-09-18 — local experimental foundation refinement
 
+- Define Ruleset Contract in `reference/rules/RULES_CONTRACT.md` establishing vocal range & tessitura boundaries, voice-leading leap audits, warning vs. blocking semantics, and the transposition-without-revoicing invariant.
+- Implement `RulesEngine` in `reference/rules/engine.py` integrating directly with `Workspace._validator` post-validation callback hook to block out-of-range candidates while logging advisory warnings.
+- Implement `transpose_phrase` verifying that semitone transposition strictly preserves exact intervallic relationships without authorizing revoicing.
+- Add 5 rules and transposition conformance tests in `tests/test_rules.py` (total 77 passing tests).
+- Add executable rules demonstration in `reference/demo_rules.py`.
+
 - Define Collaboration Contract in `reference/collaboration/COLLABORATION_CONTRACT.md` establishing multi-role authority matrices across disciplines (`COMPOSER`, `ARRANGER`, `PERFORMER`, `PRODUCER`, `EDITOR`), explicit scope ownership, and fine-grained delegation with instant revocation.
 - Implement `CollaborationManager` in `reference/collaboration/manager.py` integrating directly with `Workspace._policy` callback hook to enforce role boundaries and active delegation grants.
 - Add 5 collaboration conformance and security tests in `tests/test_collaboration.py` (total 72 passing tests).

@@ -1,5 +1,16 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 21:50:00 — Constraint-Aware Arranging and Musical Rules Engine
+
+Decision: Implement the Constraint-Aware Arranging Ruleset Silo (`reference/rules/RULES_CONTRACT.md`, `reference/rules/engine.py`).
+- Rationale: The human artist defines vocal ranges and style constraints; the machine audits conformance to prevent physical vocal strain or hardware boundary overflow.
+- Transposition vs. Revoicing Invariant: Semitone transposition preserves exact rational durations and relative pitch intervals. Changing chord inversions or revoicing requires explicit human action and cannot be authorized under the guise of transposition.
+- Warning vs. Blocking:
+  - `BLOCKING`: Range overflows and physical impossibility trigger `VALIDATION_FAILED` via `Workspace._validator`.
+  - `WARNING`: Tessitura edge notes and large melodic leaps (>12 semitones) are logged in `RulesReport` for human consideration without obstructing deliberate artistic choices.
+- Zero-Core-Mutation Integration: Uses the native `Workspace._validator` callback hook (`check_candidate(candidate) -> bool`), keeping the core kernel untouched.
+- Verification: 5 conformance tests in `tests/test_rules.py` and live demonstration in `reference/demo_rules.py`. Full test suite passes (77/77 tests).
+
 ## 2026-09-18 21:45:00 — Scoped Multi-Role Collaboration and Delegation Protocol
 
 Decision: Implement the Scoped Multi-Role Collaboration Silo (`reference/collaboration/COLLABORATION_CONTRACT.md`, `reference/collaboration/manager.py`).
