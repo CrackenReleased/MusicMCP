@@ -1,5 +1,17 @@
 # Music MCP handoff
 
+## 2026-09-18 21:55:00 — Antigravity — Requested Generated Alternatives Silo Complete
+
+Scope completed: Defined the Alternatives Contract (`reference/alternatives/ALTERNATIVES_CONTRACT.md`), implemented the Alternative Generator (`reference/alternatives/generator.py`), added 4 conformance tests (`tests/test_alternatives.py`), and created live demonstration (`reference/demo_alternatives.py`). All 81 tests in the workspace pass cleanly.
+
+Verification:
+- `python -m unittest tests/test_alternatives.py`: 4/4 tests passed in 0.001s.
+- `python -m unittest discover -s tests`: 81/81 tests passed.
+- `python -m reference.demo_alternatives`: Verified explicit request creation, diatonic 3rd-above harmony generation, root bass pedal generation, uncommitted proposal ingestion, human confirmation, and permanent `origin="generated"` provenance preservation in published Revision history.
+- Verified authority boundary: Generation occurs only upon explicit human request; accepted alternatives never claim human origin.
+
+Exact next action: Local interactive web visualizer preview or DAW bridge adapter.
+
 ## 2026-09-18 21:50:00 — Antigravity — Constraint-Aware Arranging Ruleset Silo Complete
 
 Scope completed: Defined the Ruleset Contract (`reference/rules/RULES_CONTRACT.md`), implemented the Rules Engine (`reference/rules/engine.py`), added 5 conformance tests (`tests/test_rules.py`), and created live demonstration (`reference/demo_rules.py`). All 77 tests in the workspace pass cleanly.

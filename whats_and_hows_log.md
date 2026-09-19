@@ -1,5 +1,13 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 21:55:00 — Requested Generated Alternatives and Provenance Protection
+
+Decision: Implement the Requested Generated Alternatives Silo (`reference/alternatives/ALTERNATIVES_CONTRACT.md`, `reference/alternatives/generator.py`).
+- Constitutional Invariant: Machine generation occurs strictly upon explicit, recorded human request (`AlternativeRequest`). Algorithmic models never autonomously alter score content.
+- Permanent Generated Attribution: When an artist accepts a generated alternative into the authoritative score, the revision records `origin="generated"`, preserving historical integrity and preventing machine suggestions from masquerading as human authorship.
+- Scope Isolation: Target alternatives (harmony, bass) populate designated scopes without modifying or overwriting the human composer's melody or locked constraints.
+- Verification: 4 conformance tests in `tests/test_alternatives.py` and live demonstration in `reference/demo_alternatives.py`. Full test suite passes (81/81 tests).
+
 ## 2026-09-18 21:50:00 — Constraint-Aware Arranging and Musical Rules Engine
 
 Decision: Implement the Constraint-Aware Arranging Ruleset Silo (`reference/rules/RULES_CONTRACT.md`, `reference/rules/engine.py`).

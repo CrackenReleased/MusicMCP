@@ -2,6 +2,12 @@
 
 ## 0.1.01 — 2026-09-18 — local experimental foundation refinement
 
+- Define Alternatives Contract in `reference/alternatives/ALTERNATIVES_CONTRACT.md` establishing explicit request requirements, immutable `origin="generated"` provenance, and non-destructive arrangement isolation.
+- Implement `AlternativeGenerator` in `reference/alternatives/generator.py` supporting diatonic harmonies (`HARMONY_THIRD_ABOVE`, `HARMONY_THIRD_BELOW`), octave doublings, root bass pedals, and cadential resolutions.
+- Enforce provenance invariant: accepting a generated proposal in `Workspace` preserves `origin="generated"` in the published `Revision` without converting machine output to human authorship.
+- Add 4 alternatives conformance and provenance tests in `tests/test_alternatives.py` (total 81 passing tests).
+- Add executable demonstration in `reference/demo_alternatives.py`.
+
 - Define Ruleset Contract in `reference/rules/RULES_CONTRACT.md` establishing vocal range & tessitura boundaries, voice-leading leap audits, warning vs. blocking semantics, and the transposition-without-revoicing invariant.
 - Implement `RulesEngine` in `reference/rules/engine.py` integrating directly with `Workspace._validator` post-validation callback hook to block out-of-range candidates while logging advisory warnings.
 - Implement `transpose_phrase` verifying that semitone transposition strictly preserves exact intervallic relationships without authorizing revoicing.
