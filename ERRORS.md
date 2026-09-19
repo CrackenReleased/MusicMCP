@@ -23,3 +23,13 @@ Reserved future categories, **not implemented outcomes**: REVIEW_REQUIRED, AMBIG
 New error categories require a documented cause, human action, state/transaction/rollback consequences and tests. An adapter that cannot establish safety MUST report unknown or unsafe; it MUST NOT reuse this in-memory profile's safe=True assertion. Rollback failure must report the actual affected scope and freeze further writes pending reconciliation; never report successful rollback without evidence.
 
 In 0.1.01, absent or malformed Producer records, malformed LockConstraint records, and duplicate lock scopes use VALIDATION_FAILED. There is no fabricated default attribution or silent constraint deduplication. Model-reported names do not establish authenticated provenance.
+
+## Evaluation errors — 0.1.02
+
+Evaluation failures use module `evaluation` and stable codes under `MUSICMCP-EVALUATION-<CATEGORY>`. All evaluation operations have `authoritative_state_modified=False`, `state_safe=True`, `transaction='not_applicable'`, and `rollback='not_required'`.
+
+| Category | Code | Severity | Meaning | Recovery |
+| --- | --- | --- | --- | --- |
+| CAPABILITY_UNAVAILABLE | `MUSICMCP-EVALUATION-CAPABILITY-UNAVAILABLE` | DEGRADED | Optional evaluation provider credentials missing or endpoint unavailable | Set `TYPESAFE_API_KEY` in environment for hosted evaluation or proceed with local deterministic evaluator |
+| INVALID_DISTRIBUTION | `MUSICMCP-EVALUATION-INVALID-DISTRIBUTION` | REJECTED | Probability distribution does not sum to 1.0 within tolerance (±1e-4) | Correct probability values or normalize the candidate distribution before requesting evaluation |
+| SECRET_REDACTED | `MUSICMCP-EVALUATION-SECRET-REDACTED` | INFORMATIONAL | Sensitive token or API key scrubbed from evaluation diagnostic or explanation | No action required; credential isolation successfully prevented secret leakage |

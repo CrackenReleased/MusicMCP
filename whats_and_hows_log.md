@@ -1,5 +1,26 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 23:25:00 — Provider-Neutral Evaluation Silo & TypeSafe Jev Integration
+
+Decision: Adopt and adapt the Provider-Neutral Evaluation Architecture from `01_MusicMCP_Jev_Evaluation_Architecture_Addendum.md` across Music MCP.
+- Core Architecture:
+  - Provider-Neutral Contract (`reference/evaluation/EVALUATION_CONTRACT.md`, `reference/evaluation/contract.py`):
+    - Establishes `EvaluationProvider`, `EvaluationRequest`, `EvaluationResult`, `ProbabilityDistribution`, `EvaluationProvenance`.
+    - Enforces four distinct layers: Physical Audio Signal -> Normalized Musical Evidence -> Musical Interpretation -> Authoritative State Governance.
+    - Constitutional Invariant: Interpretation is not mutation. Evaluators propose judgments; only human-held `AuthoritySession` can mutate Authoritative Musical State (AMS).
+  - Deterministic Conformance Evaluator (`reference/evaluation/evaluators.py`):
+    - Evaluates atomic conformance rules purely with local logic: locked phrase immutability, generated provenance tracking, actor authority audits, and score event onset alignment.
+  - TypeSafe Jev Adapter (`reference/evaluation/evaluators.py`):
+    - BYOK integration (`TYPESAFE_API_KEY`) for TypeSafe Jev.
+    - Invariant: When credentials are not configured, degrades gracefully to `CAPABILITY_UNAVAILABLE` with zero impact on core state and zero network overhead.
+    - Secret Redaction Invariant: Sanitizes all sensitive API keys and tokens, replacing them with `[REDACTED_SECRET]` in explanations, logs, and diagnostics.
+  - Incremental Evidence & Live Score Following (`EvidenceWindow`, `DetectedEvent`):
+    - Introduces bounded temporal windows (e.g. 12.0s - 14.0s) with acoustic onsets, durations, and pitch candidates, laying the foundation for low-latency live score-following without forcing whole-file batch transcription.
+- Conformance & Verification:
+  - 8 new tests in `tests/test_evaluation.py` covering contract validation, atomic conformance checks, score alignment, graceful degradation, secret redaction, and AMS immutability.
+  - Full test suite: 102/102 passing tests in 46.1s across the entire Music MCP workspace.
+  - Live demonstrator: `reference/demo_evaluation.py` demonstrating all evaluation primitives, score alignment, Jev adapter fallback, and secret redaction.
+
 ## 2026-09-18 22:24:00 — Acoustic Resonance, Natural Harmonics, and Sympathetic String Modeling
 
 Decision: Upgrade `reference/spectrum.py` and `reference/preview/` to actively analyze natural harmonic overtones, sympathetic octave resonance, and standing room modes.

@@ -30,6 +30,14 @@ python -m reference.cli --help
 python -m reference.demo_cli
 ```
 
+### Provider-Neutral Evaluation Silo & Jev Adapter
+
+Execute the provider-neutral evaluation contract and TypeSafe Jev adapter demonstrator:
+
+```sh
+python -m reference.demo_evaluation
+```
+
 
 The demo generates a short synthetic tone in memory, supplies two illustrative rhythmic interpretations, then records a human correction to a straight eighth note. Subsequent analysis leaves that correction intact, and a stale write is rejected. The demo does **not** infer notes from audio. Its host approval calls are scripted examples, not an interactive consent system.
 
@@ -57,6 +65,7 @@ Model-facing code must never receive the privileged authority session. The host 
 | [SPECIFICATION.md](SPECIFICATION.md) | Normative requirements and implemented profile |
 | [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md) | Ownership, dependencies, isolation and evolution |
 | [reference/CONTRACT.md](reference/CONTRACT.md) | Concrete API, authority boundary and resource limits |
+| [reference/evaluation/EVALUATION_CONTRACT.md](reference/evaluation/EVALUATION_CONTRACT.md) | Provider-neutral evaluation and Jev adapter contract |
 | [ERRORS.md](ERRORS.md) | State-aware diagnostic contract |
 | [CONFORMANCE.md](CONFORMANCE.md) | Executable coverage and honest limitations |
 | [SECURITY.md](SECURITY.md) | Trust boundaries and reporting |

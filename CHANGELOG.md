@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.02 — 2026-09-18 — Provider-Neutral Evaluation Silo & TypeSafe Jev Adapter
+
+- Define Provider-Neutral Evaluation Contract (`reference/evaluation/EVALUATION_CONTRACT.md`):
+  - Establish provider-neutral abstractions (`EvaluationProvider`, `EvaluationRequest`, `EvaluationResult`, `ProbabilityDistribution`, `EvaluationProvenance`).
+  - Enforce core invariant: Interpretation is not mutation. Evaluators propose judgments; only human-held `AuthoritySession` can mutate Authoritative Musical State (AMS).
+  - Enforce Bring-Your-Own-Key (BYOK) policy (`TYPESAFE_API_KEY`) and secret redaction (`[REDACTED_SECRET]`).
+  - Establish atomic single-judgment request design over monolithic unstructured prompts.
+
+- Implement Evaluation Domain Primitives (`reference/evaluation/contract.py`):
+  - `EvaluationType` (`BOOLEAN`, `CHOICE`, `SCORE`, `ALIGNMENT`) and `EvaluationStatus` (`SUCCESS`, `CAPABILITY_UNAVAILABLE`, `AMBIGUOUS`, `UNRESOLVED`, `ERROR`).
+  - `ProbabilityDistribution` with calibration tracking and sum-to-1.0 validation.
+  - `EvaluationProvenance` capturing provider identity, model ID, timestamp, and credential status.
+  - `DetectedEvent` and bounded `EvidenceWindow` for incremental listening and live score-following.
+
+- Implement Evaluator Engines (`reference/evaluation/evaluators.py`):
+  - `DeterministicConformanceEvaluator`: Pure local evaluation of atomic conformance rules (locked phrase invariance, generated origin verification, actor authority audits, and score event onset alignment).
+  - `TypeSafeJevAdapter`: Optional hosted evaluator adapter. Degrades gracefully to `CAPABILITY_UNAVAILABLE` when `TYPESAFE_API_KEY` is not configured; enforces secret redaction when keys are present.
+
+- Add Conformance Test Suite & Invariant Verification (`tests/test_evaluation.py`):
+  - 8 new unit and conformance tests verifying contract primitives, atomic checks, score alignment, graceful degradation, secret redaction, and AMS immutability.
+  - Total test suite expanded to 102 tests passing cleanly in ~46s.
+
+- Implement Live Demonstrator (`reference/demo_evaluation.py`):
+  - Demonstrates deterministic conformance evaluation, live score alignment via bounded `EvidenceWindow`, Jev adapter graceful fallback, secret redaction, and authoritative state preservation.
+
 ## 0.1.01 — 2026-09-18 — local experimental foundation refinement
 
 - Enhance Spectrum Watcher with Acoustic Resonance & Natural Harmonics Analysis (`reference/spectrum.py`):

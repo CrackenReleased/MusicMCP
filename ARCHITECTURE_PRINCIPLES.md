@@ -44,6 +44,25 @@ Preserve received evidence separately from derived observations. Keep source lin
 
 Use [CONFORMANCE.md](CONFORMANCE.md) to demonstrate protections through adversarial cases. A happy-path example is insufficient proof of authority or isolation. Expand the test suite when a discovered failure reveals a reusable bug class.
 
+## Evaluation provider boundary and structured interpretation
+
+The core contract establishes a provider-neutral boundary for musical evaluation and interpretation (`EvaluationProvider`, `EvaluationRequest`, `EvaluationResult`, `ProbabilityDistribution`, `EvaluationProvenance`). External evaluators (such as TypeSafe Jev, frontier Ai models, or local neural engines) are strictly optional and advisory:
+
+1. **Interpretation is not mutation**: An evaluator proposes judgments (e.g. choice distributions, boolean compliance, score alignment); it does not hold an `AuthoritySession` and cannot mutate Authoritative Musical State (AMS).
+2. **Provider failure containment**: If an external provider is missing credentials (`CAPABILITY_UNAVAILABLE`), times out, or errors, core operations, revision history, and authority continue uninterrupted.
+3. **Atomic evaluation design**: Prefer small, explicit, single-question judgments ("Was locked melody modified?", "Was generated material identified?") composed deterministically over opaque monolithic prompts.
+4. **Calibrated probability vs fake precision**: Evaluators may return calibrated probability distributions when defined and attributable; authoritative state must never depend on uncalibrated, ungrounded numerical scores.
+5. **Secret redaction & BYOK**: Evaluators operate on Bring-Your-Own-Key (`TYPESAFE_API_KEY`); credentials and tokens must never appear in error diagnostics, explanations, logs, or serialized state.
+6. **Multi-evaluator disagreement as signal**: The architecture permits multiple evaluators to disagree. Disagreement is treated as actionable musical ambiguity requiring human review, not as a catastrophic error.
+
+## Incremental evidence compatibility and live score-following
+
+Physical sound and musical notation occupy different layers:
+1. **Physical audio signal**: Pure signal processing (e.g. FFT spectrum inspection, subharmonic fundamental tracking, room-resonance mode detection) determines what physically occurred.
+2. **Normalized musical evidence**: Bounded temporal windows (`EvidenceWindow`) containing detected acoustic events (`DetectedEvent`) with onsets, durations, and candidate pitches.
+3. **Musical interpretation**: Evaluators resolve bounded evidence against candidate score events (`ScoreAlignment`) to support live score-following, expressive vibrato disambiguation, and ornament recognition without forcing batch-only whole-file constraints.
+4. **Authoritative state governance**: Human intent remains sovereign; no score-following inference automatically alters locked musical notation without explicit human authority.
+
 ## Evolution and maintenance
 
 Version contracts and implementations explicitly. Follow [DEPRECATION.md](DEPRECATION.md) for migration and removal; experimental status is not permission for silent behavioral changes. Optional dependencies need a documented purpose, license, version assumptions, failure behavior, data/network access, and replacement route.

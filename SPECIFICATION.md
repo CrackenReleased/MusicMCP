@@ -47,6 +47,16 @@ Possession of a scoped session establishes a technical capability; it does not p
 
 The host MUST obtain an explicit human action through a trusted route and invoke the session with the reviewed immutable values and expected revision. A stale revision rejection requires fresh review and consent; the host MUST NOT silently substitute a newer revision and retry. Model text claiming approval is not a trusted human action. These are host integration obligations: the in-process kernel does not implement a UI, identity service, or per-operation approval-token subsystem.
 
+
+## Provider-Neutral Evaluation Silo & Structured Interpretation (v0.1.02)
+
+1. **EVAL-1 (Optionality & Isolation):** Evaluation providers MUST remain optional. Core state operations, revision history, and authority MUST NOT depend upon external hosted evaluators. Absence of credentials degrades gracefully to status `CAPABILITY_UNAVAILABLE` without throwing unhandled exceptions or altering core state.
+2. **EVAL-2 (Interpretation is not Mutation):** Evaluators propose judgments; they MUST NOT hold an `AuthoritySession` and MUST NOT mutate Authoritative Musical State (AMS).
+3. **EVAL-3 (Atomic Request Primitives):** Evaluation requests MUST be structured as atomic, single-judgment primitives specifying question text, `EvaluationType` (`BOOLEAN`, `CHOICE`, `SCORE`, `ALIGNMENT`), candidates, and contextual parameters. Monolithic unconstrained review requests MUST NOT be accepted.
+4. **EVAL-4 (Calibrated Probability & Provenance):** Evaluators MAY supply a `ProbabilityDistribution` when probabilities sum to 1.0 within tolerance (±1e-4) and calibration status is explicitly tracked. Every result MUST retain immutable `EvaluationProvenance` capturing provider identity, model ID, timestamp, and credential status.
+5. **EVAL-5 (Bounded Incremental Evidence):** Incremental listening and live score-following are supported via bounded temporal windows (`EvidenceWindow`) containing acoustic observations (`DetectedEvent`) with onset seconds, duration seconds, and pitch candidate tuples. Evaluators resolve observations against candidate score events without forcing full-file batch transcription.
+6. **EVAL-6 (Secret Redaction & BYOK):** Adapters for hosted providers (including `TypeSafeJevAdapter` via `TYPESAFE_API_KEY`) MUST support Bring-Your-Own-Key configuration and MUST redact sensitive API keys and tokens (`[REDACTED_SECRET]`) from all explanations, user-facing messages, and diagnostics.
+
 ## Extension requirements (not implemented)
 
 Future modules MUST declare version/capabilities, schemas, permissions, side effects, network/data retention, policy restrictions, validation, failure modes, and rollback guarantees. Discovery MUST distinguish supported, disabled, degraded, and unsupported capabilities. Distributed identities, durable transactions, adapters, calibrated uncertainty, collaborative conflict resolution, and actual transcription require additional contracts and conformance profiles. Supporting a future feature MUST NOT weaken the above invariants.

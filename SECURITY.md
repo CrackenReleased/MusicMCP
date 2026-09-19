@@ -34,6 +34,16 @@ Before adding a provider, parser, analyzer, or application adapter, document its
 
 External providers may retain data or change their terms. No provider integration or rights adjudication is included here. Policy decisions must remain separate from technical capability and human authorization.
 
+
+## Evaluation Provider Security & Credential Isolation (v0.1.02)
+
+The evaluation silo introduces support for optional external evaluators (such as TypeSafe Jev) under strict credential isolation:
+
+1. **Bring Your Own Key (BYOK):** Hosted evaluation providers require user-supplied credentials (e.g. `TYPESAFE_API_KEY`) loaded from the environment or explicit parameter injection. Shared maintainer keys MUST NOT be checked into source repositories, configuration files, test fixtures, documentation, or handoff logs.
+2. **Secret Redaction Invariant:** Adapters MUST sanitize sensitive tokens and API keys, replacing them with `[REDACTED_SECRET]` in all explanations, user-facing error messages, and technical diagnostics. Automated tests enforce that keys never leak into evaluation outputs.
+3. **Privilege & Mutation Isolation:** Evaluation providers are strictly advisory. Evaluators do NOT receive `AuthoritySession` tokens and have no access to internal workspace commit machinery. Evaluator judgments cannot mutate Authoritative Musical State.
+4. **Absence of Credentials is Safe:** When credentials are absent, adapters degrade immediately to status `CAPABILITY_UNAVAILABLE` without network activity, unhandled exceptions, or side effects on core musical state.
+
 ## Reporting vulnerabilities
 
 No private reporting channel or response-time commitment has been established for this experimental project. If the canonical repository's Security tab offers private vulnerability reporting, use that verified channel. Otherwise, open a minimal public issue requesting a private reporting route **without** exploit details, sensitive material, or credentials; wait for the maintainer to supply a verified route before sharing them. Do not guess a private email address.
