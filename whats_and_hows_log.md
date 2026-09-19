@@ -1,5 +1,14 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 20:52:00 — Monophonic audio analyzer contract and isolated reference silo
+
+Decision: Implement the monophonic audio analyzer contract (`reference/ANALYZER_CONTRACT.md`) and reference implementation (`reference/analyzer.py`) adhering strictly to Python 3.11+ standard library only (`wave`, `struct`, `math`, `fractions`).
+- Authority Boundary: The analyzer produces observations and provisional proposals only; it has zero access to host-held `AuthoritySession` and cannot mutate or commit workspace state.
+- Signal Processing: Evaluates 16-bit PCM mono WAV audio. Computes frame RMS energy to segregate silence/unvoiced segments. Computes normalized square-difference autocorrelation with parabolic sub-sample peak refinement over 55 Hz to 1050 Hz to extract fundamental frequency f0.
+- Symbolic Mapping & Quantization: Maps continuous f0 to standard Western pitches and cents deviation. Quantizes segment durations to exact rational `Fraction` quarter-note units on a defined musical grid based on tempo BPM.
+- Uncertainty Classification: Categorizes phrases into `HIGH` (steady pitch), `MEDIUM` (minor drift), `AMBIGUOUS` (vibrato > ±35 cents), `LOW` (weak periodicity), or `INSUFFICIENT_EVIDENCE` (silence/noise).
+- Conformance & Architecture: Added 9 conformance tests in `tests/test_analyzer.py` and `tests/test_architecture.py`. Full test suite passes (36/36 tests). Added executable demonstration in `reference/demo_analyzer.py`.
+
 ## 2026-09-18 19:54:52 — v0.1.01 approved foundation refinements
 
 The user approved the review checkpoint with "Great. Take the next steps." Scope remains the four identified foundation gaps: uncertainty semantics, producer attribution, constraint provenance and trusted-host approval obligations. No transcription, MCP transport, storage, adapters, GUI or website work was added.

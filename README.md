@@ -4,7 +4,7 @@
 
 Open musical intelligence infrastructure connecting human intention, evidence, responsible machine assistance, and existing musical tools. Models propose; explicit human authority governs changes. MusicXML, MIDI, notation applications, and MCP transports will connect through replaceable boundaries.
 
-## Current status: v0.1.01 experimental foundation
+## Current status: v0.1.01 experimental foundation & monophonic analyzer silo
 
 The first build provides a documented, executable **in-process authority kernel**, not a transcription product or MCP server. It preserves supplied evidence and competing interpretations, supports human confirmation/correction, rejects unauthorized and stale changes, retains provenance, and restores historical phrase content through new revisions.
 

@@ -26,6 +26,20 @@ class ArchitectureConformance(unittest.TestCase):
             for name in names:
                 self.assertIn(name.split('.')[0], sys.stdlib_module_names)
 
+    def test_analyzer_imports_only_standard_library_and_core(self):
+        tree = ast.parse((ROOT / 'reference/analyzer.py').read_text(encoding='utf-8'))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                names = [node.module]
+            else:
+                continue
+            for name in names:
+                top_pkg = name.split('.')[0]
+                self.assertTrue(top_pkg in sys.stdlib_module_names or top_pkg == 'reference',
+                                f'Disallowed non-stdlib import in analyzer: {name}')
+
     def test_version_matches_metadata(self):
         metadata = tomllib.loads((ROOT / 'pyproject.toml').read_text(encoding='utf-8'))
         self.assertEqual(metadata['project']['version'], VERSION)
@@ -35,7 +49,8 @@ class ArchitectureConformance(unittest.TestCase):
         required = ('README.md', 'PHILOSOPHY.md', 'SPECIFICATION.md', 'ARCHITECTURE_PRINCIPLES.md',
                     'AGENTS.md', 'whats_and_hows_log.md', 'handoff.md', 'goals_and_dreams.md',
                     'ERRORS.md', 'error_history_log.md', 'CONTRIBUTING.md', 'CHANGELOG.md',
-                    'SECURITY.md', 'CONFORMANCE.md', 'DEPRECATION.md', 'reference/CONTRACT.md')
+                    'SECURITY.md', 'CONFORMANCE.md', 'DEPRECATION.md', 'reference/CONTRACT.md',
+                    'reference/ANALYZER_CONTRACT.md')
         for filename in required:
             path = ROOT / filename
             self.assertTrue(path.is_file(), filename)
