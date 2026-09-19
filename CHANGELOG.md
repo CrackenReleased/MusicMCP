@@ -2,6 +2,12 @@
 
 ## 0.1.01 — 2026-09-18 — local experimental foundation refinement
 
+- Implement Host-Held Interactive Review Shell and CLI in `reference/cli.py` providing an end-to-end interface for human artists holding privileged `AuthoritySession` on the host.
+- Provide CLI subcommands: `init` (project creation with scoped grants & locks), `info` (project summary & integrity audit), `inspect-audio` (10-band spectrum breakdown & non-musical anomaly report), `propose-audio` (audio ingestion & pitch proposal), `review` (interactive human confirmation or correction to new published Revision), `export` (MusicXML and MIDI export with REP-1 loss disclosure), `import` (MusicXML and MIDI ingestion with loss reporting), `history` (immutable revision audit log), and `restore` (historical revision restoration).
+- Add note string parser (`parse_notes_string`) supporting comma-separated and space-separated pitch-duration pairs (e.g. `'C4 1, E4 1/2, G4 1/2, rest 1'`).
+- Add 2 CLI lifecycle conformance tests in `tests/test_cli.py` (total 67 passing tests).
+- Add executable CLI demonstration in `reference/demo_cli.py`.
+
 - Define Durable Storage Contract in `reference/storage/STORAGE_CONTRACT.md` establishing content-addressable SHA-256 evidence storage, complete provenance preservation, and SQLite WAL atomic transactions.
 - Implement pure Python SQLite Storage Engine in `reference/storage/sqlite_store.py` (`SqliteStorageEngine`) supporting atomic `save_workspace`, `load_workspace`, and deep `verify_integrity` (checking SQLite PRAGMA, schema version, evidence SHA-256 digests, and revision parent-chain continuity).
 - Add 5 storage conformance and adversarial corruption tests in `tests/test_storage.py` (total 65 passing tests).

@@ -1,5 +1,17 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 21:40:00 — Host-Held Interactive Review Shell & Authority CLI Implementation
+
+Decision: Implement the Host-Held Interactive Review Shell and Command-Line Interface (`reference/cli.py`) adhering to pure Python 3.11+ standard library (`argparse`, `sys`, `pathlib`).
+- Constitutional Boundary: As specified in Founding Directive §1 and §4, the human musician holds ultimate artistic authority. Machine models propose; the human governs. The CLI provides a direct interface on the host where human authority sessions are held and exercised, completely isolated from external model transport or remote access.
+- Comprehensive Workflow:
+  - Project lifecycle: `init`, `info`, `history`, `restore`.
+  - Acoustic inspection: `inspect-audio` surfaces 10-band spectrum energy and anomaly flags (`MAINS_HUM`, `CLIPPING`, `DC_OFFSET`, `RUMBLE`, `LEAK`).
+  - Evidence ingestion: `propose-audio` records evidence, observation, and pitch proposal with qualitative uncertainty.
+  - Authority review: `review` provides human decision point: `confirm` accepts proposal into revision, `correct` records human-authored pitch corrections with `origin="human"`.
+  - External exchange: `export` and `import` connect MusicXML and MIDI formats with mandatory SPECIFICATION REP-1 loss disclosure reports.
+- Verification: Conformance tests in `tests/test_cli.py` and live demonstration in `reference/demo_cli.py`. Full test suite passes (67/67 tests).
+
 ## 2026-09-18 21:35:00 — Durable Evidence and Revision Storage Silo with Content-Addressable Integrity
 
 Decision: Implement the isolated Durable Storage Silo (`reference/storage/STORAGE_CONTRACT.md`, `reference/storage/sqlite_store.py`) using pure Python 3.11+ standard library (`sqlite3`, `hashlib`, `json`, `pathlib`).

@@ -1,5 +1,17 @@
 # Music MCP handoff
 
+## 2026-09-18 21:40:00 — Antigravity — Host-Held Interactive Review Shell & CLI Complete
+
+Scope completed: Implemented the Host-Held Interactive Review Shell and CLI (`reference/cli.py`), added 2 full-lifecycle conformance tests (`tests/test_cli.py`), and created live demonstration (`reference/demo_cli.py`). All 67 tests in the workspace pass cleanly.
+
+Verification:
+- `python -m unittest tests/test_cli.py`: 2/2 tests passed in 2.45s.
+- `python -m unittest discover -s tests`: 67/67 tests passed.
+- `python -m reference.demo_cli`: Verified complete lifecycle: project initialization, audio acoustic spectrum inspection with mains hum detection, audio proposal ingestion, human confirmation (Revision 1), human correction (Revision 2), MusicXML and MIDI export with REP-1 loss disclosure, and revision history inspection.
+- Verified authority boundary: The CLI runs directly on the host holding privileged `AuthoritySession` tokens; external models communicate only through unprivileged read/proposal transports.
+
+Exact next action: Scoped multi-role collaboration session protocol or web demonstration preview.
+
 ## 2026-09-18 21:35:00 — Antigravity — Durable Evidence and Revision Storage Silo Complete
 
 Scope completed: Defined the Storage Contract (`reference/storage/STORAGE_CONTRACT.md`), implemented the pure standard-library SQLite Storage Engine (`reference/storage/sqlite_store.py`), added 5 conformance and corruption tests (`tests/test_storage.py`), and created live demonstration (`reference/demo_storage.py`). All 65 tests in the workspace pass cleanly.

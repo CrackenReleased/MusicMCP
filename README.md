@@ -4,7 +4,7 @@
 
 Open musical intelligence infrastructure connecting human intention, evidence, responsible machine assistance, and existing musical tools. Models propose; explicit human authority governs changes. MusicXML, MIDI, notation applications, and MCP transports will connect through replaceable boundaries.
 
-## Current status: v0.1.01 experimental foundation, monophonic analyzer, spectrum watcher, MCP transport, format adapters & durable storage
+## Current status: v0.1.01 experimental foundation, monophonic analyzer, spectrum watcher, MCP transport, format adapters, durable storage & host CLI
 
 The first build provides a documented, executable **in-process authority kernel**, not a transcription product or MCP server. It preserves supplied evidence and competing interpretations, supports human confirmation/correction, rejects unauthorized and stale changes, retains provenance, and restores historical phrase content through new revisions.
 
@@ -20,6 +20,16 @@ From this repository using Python 3.11 or later, with no installation or externa
 python -B -m reference.demo
 python -B -m unittest discover -s tests -v
 ```
+
+### Interactive Host CLI
+
+Execute the host-held review shell and authority interface:
+
+```sh
+python -m reference.cli --help
+python -m reference.demo_cli
+```
+
 
 The demo generates a short synthetic tone in memory, supplies two illustrative rhythmic interpretations, then records a human correction to a straight eighth note. Subsequent analysis leaves that correction intact, and a stale write is rejected. The demo does **not** infer notes from audio. Its host approval calls are scripted examples, not an interactive consent system.
 
