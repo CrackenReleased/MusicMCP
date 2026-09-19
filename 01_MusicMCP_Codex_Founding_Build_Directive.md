@@ -83,7 +83,7 @@ The governing principle of Music MCP is:
 
 > **The musician stays the artist. The machine does the notation, calculation, and clerical work.**
 
-This does not prohibit AI-generated musical suggestions when a human explicitly requests them.
+This does not prohibit Ai-generated musical suggestions when a human explicitly requests them.
 
 It establishes authority.
 
@@ -111,7 +111,7 @@ Music MCP is intended to become an open, model-agnostic, application-agnostic fr
 
 It is not primarily a notation application.
 
-It is not primarily an AI music generator.
+It is not primarily an Ai music generator.
 
 It is not intended to replace Dorico, MuseScore, Sibelius, DAWs, MusicXML, MIDI, or future professional musical software.
 
@@ -119,7 +119,7 @@ It is infrastructure connecting:
 
 - human musical intention;
 - authoritative musical state;
-- AI reasoning;
+- Ai reasoning;
 - musical analysis;
 - deterministic musical operations;
 - validation;
@@ -146,7 +146,7 @@ Music MCP should conceptually contain distinct layers for:
 11. MCP exposure;
 12. conformance and testing.
 
-The system must remain useful as individual AI models and external applications change.
+The system must remain useful as individual Ai models and external applications change.
 
 A future GPT, Gemini, Claude, open-source model, specialized music model, or other computational system should be capable of using the framework without changing its fundamental philosophy.
 
@@ -180,7 +180,7 @@ It is:
 
 ---
 
-# 4. DO NOT PUT THE AI MODEL AT THE CENTER
+# 4. DO NOT PUT THE Ai MODEL AT THE CENTER
 
 The model must not own authoritative state.
 
@@ -678,7 +678,7 @@ A constraint may originate from:
 - institution;
 - imported project;
 - selected style profile;
-- AI suggestion.
+- Ai suggestion.
 
 A theoretical rule must not be silently presented as universal musical law.
 
@@ -742,7 +742,7 @@ Authoritative musical state should eventually support immutable or equivalently 
 
 The system should be able to answer questions such as:
 
-- What did the AI change?
+- What did the Ai change?
 - What did the human change?
 - Which material came from the original performance?
 - Which material was inferred?
@@ -923,7 +923,7 @@ A transcription crash should not corrupt authoritative musical state.
 
 A Dorico adapter failure should not disable MusicXML.
 
-An unavailable AI provider should not make deterministic score transformations unavailable.
+An unavailable Ai provider should not make deterministic score transformations unavailable.
 
 A broken harmony analyzer should not prevent score reading.
 
@@ -984,7 +984,7 @@ same authoritative state
 
 Operations should be idempotent where the semantics permit it.
 
-AI interpretation and generation do not need to pretend to be deterministic.
+Ai interpretation and generation do not need to pretend to be deterministic.
 
 Do not blur these categories.
 
@@ -1163,7 +1163,7 @@ Documentation is not cleanup performed after implementation.
 
 It is part of implementation.
 
-The project owner deliberately uses documentation as external working memory and as a continuity mechanism between human work sessions and AI agents.
+The project owner deliberately uses documentation as external working memory and as a continuity mechanism between human work sessions and Ai agents.
 
 No important architectural decision may exist solely inside a chat transcript.
 
@@ -1246,7 +1246,7 @@ Include:
 
 ## AGENTS.md
 
-Instructions every AI coding agent must read before modifying the repository.
+Instructions every Ai coding agent must read before modifying the repository.
 
 Include:
 
@@ -1628,7 +1628,7 @@ Do not architect the system around today's policy assumptions as if they are imm
 
 # 35. AGENT CONTINUITY
 
-This repository is expected to be developed with significant assistance from AI coding agents.
+This repository is expected to be developed with significant assistance from Ai coding agents.
 
 Agents have finite context.
 
@@ -1799,7 +1799,7 @@ Document every expansion.
 
 Your initial task is NOT to implement every capability described above.
 
-Your initial task is to turn these founding requirements into a coherent repository that another competent developer or AI agent could understand and continue.
+Your initial task is to turn these founding requirements into a coherent repository that another competent developer or Ai agent could understand and continue.
 
 Proceed approximately in this order:
 
@@ -2069,7 +2069,7 @@ The preferred answer is:
 
 Then ask:
 
-> If an AI model behaves incorrectly, can it corrupt authoritative musical state?
+> If an Ai model behaves incorrectly, can it corrupt authoritative musical state?
 
 The preferred answer is:
 
