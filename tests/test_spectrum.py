@@ -9,8 +9,10 @@ from tests.audio_fixtures import (
     make_dc_offset_wav,
     make_extended_ultrasonic_wav,
     make_extreme_ultrasonic_wav,
+    make_guitar_natural_harmonic_wav,
     make_infrasonic_wav,
     make_mains_hum_wav,
+    make_piano_sympathetic_resonance_wav,
     make_silence_wav,
     make_ultrasonic_leak_wav,
     make_wav
@@ -143,6 +145,54 @@ class SpectrumWatcherConformance(unittest.TestCase):
         self.assertIsNotNone(result.spectrum_report)
         self.assertIn('CLIPPING', [a.kind for a in result.spectrum_report.anomalies])
         self.assertIn('Watcher Anomalies', result.description)
+
+
+    def test_piano_sympathetic_resonance_octaves_recognized_as_clean_music(self):
+        # Middle C with open damper sympathetic resonance on C5 (2f0) and C6 (4f0)
+        audio = make_piano_sympathetic_resonance_wav(fundamental_freq=261.63, duration=0.5)
+        report = watch_audio_bytes(audio)
+
+        # Invariant: Natural acoustic resonance MUST NEVER be flagged as non-musical anomaly
+        self.assertTrue(report.clean_musical_signal)
+        self.assertEqual(len(report.anomalies), 0)
+        self.assertIsNotNone(report.resonance)
+        self.assertTrue(report.resonance.sympathetic_octaves_present)
+        harmonic_nums = [h.harmonic_number for h in report.resonance.harmonics]
+        self.assertIn(1, harmonic_nums)
+        self.assertIn(2, harmonic_nums)
+        self.assertIn('Sympathetic octave resonance active', report.resonance.description)
+
+    def test_guitar_natural_harmonic_series_recognized(self):
+        # Guitar 7th fret natural harmonic (196 Hz base with prominent 3rd harmonic 588 Hz)
+        audio = make_guitar_natural_harmonic_wav(base_freq=196.0, duration=0.5)
+        report = watch_audio_bytes(audio)
+
+        self.assertTrue(report.clean_musical_signal)
+        self.assertIsNotNone(report.resonance)
+        self.assertTrue(report.resonance.natural_harmonics_present)
+        self.assertIn('Natural harmonic overtone bloom active', report.resonance.description)
+
+    def test_room_resonance_distinct_from_mains_hum(self):
+        # Middle C (261.63 Hz) + 73 Hz room standing wave mode (not mains hum, not harmonic of C4)
+        import math, io, wave, struct
+        sample_rate = 44100
+        n_samples = int(0.5 * sample_rate)
+        samples = []
+        for i in range(n_samples):
+            t = i / float(sample_rate)
+            val = 0.4 * math.sin(2.0 * math.pi * 261.63 * t) + 0.15 * math.sin(2.0 * math.pi * 73.0 * t)
+            samples.append(int(val * 32767))
+        buf = io.BytesIO()
+        with wave.open(buf, 'wb') as wf:
+            wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(sample_rate)
+            wf.writeframes(struct.pack(f"<{n_samples}h", *samples))
+
+        report = watch_audio_bytes(buf.getvalue())
+        self.assertTrue(report.clean_musical_signal)
+        self.assertIsNotNone(report.resonance)
+        # 73 Hz is tracked as room resonance, NOT erroneously flagged as 60Hz/100Hz MAINS_HUM
+        self.assertNotIn('MAINS_HUM', [a.kind for a in report.anomalies])
+        self.assertTrue(any(abs(r - 73.0) < 6.0 for r in report.resonance.room_resonances))
 
 
 if __name__ == '__main__':

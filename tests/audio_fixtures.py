@@ -215,3 +215,45 @@ def make_extreme_ultrasonic_wav(freq: float = 30000.0, duration: float = 0.5, sa
             samples.append(max(-32767, min(32767, int(val * 32767))))
         wf.writeframes(struct.pack(f"<{n_samples}h", *samples))
     return buf.getvalue()
+
+def make_piano_sympathetic_resonance_wav(fundamental_freq: float = 261.63, duration: float = 0.5, sample_rate: int = 44100) -> bytes:
+    """Generate simulated piano Middle C strike with open damper sympathetic resonance on octave strings (C5=523Hz, C6=1046Hz)."""
+    buf = io.BytesIO()
+    with wave.open(buf, 'wb') as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(sample_rate)
+        n_samples = int(duration * sample_rate)
+        samples = []
+        for i in range(n_samples):
+            t = i / float(sample_rate)
+            decay = math.exp(-2.0 * t)
+            val = (
+                0.4 * math.sin(2.0 * math.pi * fundamental_freq * t) +
+                0.2 * math.sin(2.0 * math.pi * (2.0 * fundamental_freq) * t) +
+                0.1 * math.sin(2.0 * math.pi * (4.0 * fundamental_freq) * t)
+            ) * decay
+            samples.append(max(-32767, min(32767, int(val * 32767))))
+        wf.writeframes(struct.pack(f"<{n_samples}h", *samples))
+    return buf.getvalue()
+
+
+def make_guitar_natural_harmonic_wav(base_freq: float = 196.0, duration: float = 0.5, sample_rate: int = 44100) -> bytes:
+    """Generate simulated guitar natural harmonic at 7th fret (3rd harmonic / perfect fifth node, 3f0 = 588Hz)."""
+    buf = io.BytesIO()
+    with wave.open(buf, 'wb') as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(sample_rate)
+        n_samples = int(duration * sample_rate)
+        samples = []
+        for i in range(n_samples):
+            t = i / float(sample_rate)
+            decay = math.exp(-1.5 * t)
+            val = (
+                0.25 * math.sin(2.0 * math.pi * base_freq * t) +
+                0.45 * math.sin(2.0 * math.pi * (3.0 * base_freq) * t)
+            ) * decay
+            samples.append(max(-32767, min(32767, int(val * 32767))))
+        wf.writeframes(struct.pack(f"<{n_samples}h", *samples))
+    return buf.getvalue()

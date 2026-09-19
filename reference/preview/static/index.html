@@ -356,6 +356,14 @@
       <div id="anomalies-list" class="anomaly-box">
         No non-musical anomalies detected in active audio evidence.
       </div>
+
+      <div class="card-header" style="margin-top: 0.5rem;">
+        <h3 class="card-title" style="font-size: 0.85rem;">Acoustic Resonance & Harmonics</h3>
+        <span id="resonance-status-badge" class="badge badge-indigo">NATURAL</span>
+      </div>
+      <div id="resonance-box" class="anomaly-box">
+        No active acoustic resonance data.
+      </div>
     </section>
 
     <!-- MIDDLE PANEL: Authoritative Score & Phrasing -->
@@ -649,6 +657,31 @@
         anomalyBadge.className = 'badge badge-emerald';
         anomalyBadge.innerText = 'CLEAN SIGNAL';
         anomalyBox.innerHTML = 'Zero non-musical acoustic anomalies detected. Signal strictly within musical bounds.';
+      }
+
+      // Render Acoustic Resonance
+      const resBadge = document.getElementById('resonance-status-badge');
+      const resBox = document.getElementById('resonance-box');
+      if (resBox && report.resonance && report.resonance.fundamental_hz) {
+        const r = report.resonance;
+        let badgesHtml = '';
+        if (r.sympathetic_octaves_present) badgesHtml += '<span class="badge badge-emerald" style="margin-right: 0.3rem;">Piano Octaves Active</span>';
+        if (r.natural_harmonics_present) badgesHtml += '<span class="badge badge-cyan" style="margin-right: 0.3rem;">Nodal Harmonics Active</span>';
+        if (r.room_resonances && r.room_resonances.length > 0) badgesHtml += `<span class="badge badge-amber">Room Modes: ${r.room_resonances.map(m => m + 'Hz').join(', ')}</span>`;
+
+        let harmonicsHtml = (r.harmonics || []).map(h => `
+          <span class="note-pill" style="font-size: 0.68rem; margin: 0.15rem;">
+            <strong>${h.harmonic_number === 1 ? 'f0' : h.harmonic_number + 'f0'}:</strong> ${h.frequency_hz}Hz (${h.relative_db >= 0 ? '+' : ''}${h.relative_db}dB)
+          </span>
+        `).join('');
+
+        resBox.innerHTML = `
+          <div style="margin-bottom: 0.35rem; display: flex; flex-wrap: wrap; gap: 0.2rem;">${badgesHtml}</div>
+          <div style="font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 0.4rem;">${r.description}</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.2rem;">${harmonicsHtml}</div>
+        `;
+      } else if (resBox) {
+        resBox.innerHTML = '<div style="color: var(--text-muted); font-size: 0.75rem;">Diffuse or synthetic acoustic spectrum.</div>';
       }
     }
 

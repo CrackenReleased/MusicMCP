@@ -1,5 +1,17 @@
 # Music MCP handoff
 
+## 2026-09-18 22:24:00 — Antigravity — Acoustic Resonance, Natural Harmonics & Sympathetic Strings Complete
+
+Scope completed: Enhanced `reference/spectrum.py` with `AcousticResonance` and `HarmonicPeak` analysis. Modeled piano open-damper sympathetic octave resonance, guitar nodal harmonics (flageolets) with subharmonic fundamental resolution, and low-frequency standing room modes. Updated visualizer preview (`reference/preview/server.py` and `reference/preview/static/index.html`) to render real-time resonance cards. Added 3 conformance tests in `tests/test_spectrum.py` (total 94 passing tests).
+
+Verification:
+- `python -m unittest tests/test_spectrum.py`: 15/15 tests passed in 10.888s.
+- `python -m unittest tests/test_preview.py`: 10/10 tests passed in 5.204s.
+- `python -m unittest discover -s tests`: 94/94 tests passed in 45.900s.
+- Verified physical acoustic modeling: Piano octave excitation ($C_4 	o C_5, C_6$) flags `sympathetic_octaves_present=True` with zero anomaly penalties. Guitar nodal node ($G_3 	o D_5$) flags `natural_harmonics_present=True`. Room mode standing wave is distinguished from electrical mains hum.
+
+Exact next action: DAW / External computer-use bridge adapter (`reference/daw/`).
+
 ## 2026-09-18 22:18:00 — Antigravity — Acoustic Guidance Added to PHILOSOPHY.md
 
 Scope completed: Added "Guidance: Acoustic experience versus technical measurement" to `PHILOSOPHY.md` and recorded rationale in `whats_and_hows_log.md`. Establishes that technical purity is subordinate to human experience; natural acoustic phenomena (sympathetic resonance, natural string harmonics, room modes) are respected, and the watcher focuses strictly on guarding against non-musical defects.

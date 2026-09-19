@@ -1,5 +1,15 @@
 # Decisions and architectural assessment
 
+## 2026-09-18 22:24:00 — Acoustic Resonance, Natural Harmonics, and Sympathetic String Modeling
+
+Decision: Upgrade `reference/spectrum.py` and `reference/preview/` to actively analyze natural harmonic overtones, sympathetic octave resonance, and standing room modes.
+- Physical Realities Modeled:
+  - Open Piano Sympathetic Resonance: Striking Middle C with un-damped strings excites octave harmonics ($C_5, C_6, C_7$). The watcher tracks these as `sympathetic_octaves_present=True`.
+  - Guitar Nodal Flageolets: Lightly touching a string node damps the fundamental and elevates the harmonic (e.g. 3rd harmonic $D_5$ on a $G_3$ string). The watcher employs subharmonic resolution within 4% frequency tolerance to identify the true string fundamental while recognizing the natural overtone bloom (`natural_harmonics_present=True`).
+  - Standing Room Modes: Identifies low-frequency physical room resonance modes (< 300 Hz) that do not align with harmonic integer multiples, accurately distinguishing physical acoustic environments from electrical mains hum (50/60/100/120 Hz).
+- Anomaly Invariant: Natural resonance is recognized as organic musical tone and is never penalized or flagged as an anomaly.
+- Verification: 3 conformance tests added to `tests/test_spectrum.py` covering piano sympathetic octaves, guitar natural harmonics, and room modes. Full test suite passes (94/94 tests in 45.9s).
+
 ## 2026-09-18 22:18:00 — Guidance: Acoustic Experience Versus Technical Measurement
 
 Decision: Add explicit acoustic guidance to `PHILOSOPHY.md` distinguishing physical/psychoacoustic experience from mechanical electronic measurement.

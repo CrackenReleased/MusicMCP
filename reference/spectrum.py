@@ -1,6 +1,7 @@
-"""Audio Spectrum Inspector and Non-Musical Anomaly Watcher for Music MCP.
+"""Audio Spectrum Inspector, Non-Musical Anomaly Watcher, and Acoustic Resonance Analyzer for Music MCP.
 Monitors full 10 Hz to 28,000 Hz (28 kHz) range, extended ultrasonic and infrasonic bands,
-and watches for non-musical artifacts (DC offset, clipping, clicks, hum, spurious tones, ultrasonic leak).
+watches for non-musical artifacts (DC offset, clipping, clicks, hum, ultrasonic leak),
+and analyzes acoustic harmonic series, sympathetic octave resonance, and room modes.
 """
 from dataclasses import dataclass
 import io
@@ -38,6 +39,24 @@ class SpectralAnomaly:
 
 
 @dataclass(frozen=True)
+class HarmonicPeak:
+    harmonic_number: int  # 1 for fundamental f0, 2 for octave 2f0, 3 for 5th 3f0, etc.
+    frequency_hz: float
+    magnitude: float
+    relative_db: float  # Relative to fundamental (dB)
+
+
+@dataclass(frozen=True)
+class AcousticResonance:
+    fundamental_hz: float | None
+    harmonics: tuple[HarmonicPeak, ...]
+    sympathetic_octaves_present: bool  # True if 2f0, 4f0, or 8f0 (e.g. un-damped piano octave strings)
+    natural_harmonics_present: bool    # True if 3f0, 5f0, or 7f0 (e.g. guitar nodal flageolets)
+    room_resonances: tuple[float, ...] # Low-frequency standing room modes (< 300 Hz)
+    description: str
+
+
+@dataclass(frozen=True)
 class SpectrumReport:
     duration_seconds: float
     sample_rate: int
@@ -50,6 +69,7 @@ class SpectrumReport:
     anomalies: tuple[SpectralAnomaly, ...]
     clean_musical_signal: bool
     summary: str
+    resonance: AcousticResonance | None = None
 
 
 def _fft_radix2(x: list[complex]) -> list[complex]:
@@ -72,38 +92,169 @@ def compute_power_spectrum(samples: list[float], sample_rate: int, n_fft: int = 
     if not samples:
         return []
 
-    # Choose power of 2, up to 4096 for fine 10Hz/hum resolution
     n_fft = 2 ** int(math.log2(max(256, min(n_fft, len(samples)))))
     if n_fft > len(samples):
         n_fft = 2 ** int(math.log2(max(256, len(samples))))
 
     hann = [0.5 * (1.0 - math.cos(2.0 * math.pi * i / (n_fft - 1))) for i in range(n_fft)]
+    hop_size = n_fft // 2
+    n_frames = max(1, (len(samples) - n_fft) // hop_size + 1)
 
     acc_magnitudes = [0.0] * (n_fft // 2)
 
-    # Analyze up to 4 evenly distributed frames across the audio buffer for fast pure-Python execution
-    max_frames = 4
-    if len(samples) <= n_fft:
-        frame_starts = [0]
-    else:
-        step = max(n_fft // 2, (len(samples) - n_fft) // max_frames)
-        frame_starts = list(range(0, len(samples) - n_fft + 1, step))[:max_frames]
+    for frame_idx in range(n_frames):
+        start = frame_idx * hop_size
+        frame = samples[start:start + n_fft]
+        if len(frame) < n_fft:
+            break
+        windowed = [complex(frame[i] * hann[i], 0.0) for i in range(n_fft)]
+        spectrum_complex = _fft_radix2(windowed)
 
-    n_frames = len(frame_starts)
-    for pos in frame_starts:
-        frame = [samples[pos + i] * hann[i] for i in range(n_fft)]
-        c_frame = [complex(s, 0.0) for s in frame]
-        fft_out = _fft_radix2(c_frame)
         for k in range(n_fft // 2):
-            mag = math.sqrt(fft_out[k].real ** 2 + fft_out[k].imag ** 2)
+            c = spectrum_complex[k]
+            mag = math.sqrt(c.real * c.real + c.imag * c.imag) / float(n_fft)
             acc_magnitudes[k] += mag
 
     bin_hz = sample_rate / float(n_fft)
     return [(k * bin_hz, acc_magnitudes[k] / float(n_frames)) for k in range(n_fft // 2)]
 
 
+def analyze_acoustic_resonance(spectrum: list[tuple[float, float]], bin_width: float, nyquist_hz: float) -> AcousticResonance:
+    """Detect natural harmonic overtone series, sympathetic octave resonance, and room modes from FFT spectrum."""
+    if not spectrum or len(spectrum) < 10:
+        return AcousticResonance(None, (), False, False, (), "Insufficient spectrum data")
+
+    mags = [m for _, m in spectrum]
+    max_mag = max(mags) if mags else 0.0
+    if max_mag < 1e-5:
+        return AcousticResonance(None, (), False, False, (), "Silence / low acoustic energy")
+
+    # Find prominent peak in musical fundamental range: 45 Hz to 2000 Hz
+    min_f0_bin = max(1, int(45.0 / bin_width))
+    max_f0_bin = min(len(spectrum) - 2, int(2000.0 / bin_width))
+
+    f0_hz = None
+    f0_mag = 0.0
+
+    if max_f0_bin > min_f0_bin + 2:
+        sub = mags[min_f0_bin:max_f0_bin + 1]
+        peak_idx = sub.index(max(sub))
+        cand_bin = min_f0_bin + peak_idx
+        cand_mag = mags[cand_bin]
+
+        # Must be at least 15% of max spectrum energy
+        if cand_mag >= 0.15 * max_mag:
+            cand_hz = cand_bin * bin_width
+            # Check for subharmonic acoustic fundamental (e.g. guitar flageolet node where fundamental is damped)
+            for div in (4, 3, 2):
+                sub_hz = cand_hz / float(div)
+                if sub_hz >= 45.0:
+                    sub_b = int(round(sub_hz / bin_width))
+                    if 2 < sub_b < len(spectrum) - 3:
+                        sub_win = mags[sub_b - 2 : sub_b + 3]
+                        sub_peak_mag = max(sub_win)
+                        peak_offset = sub_win.index(sub_peak_mag) - 2
+                        actual_sub_hz = (sub_b + peak_offset) * bin_width
+                        # Subharmonic must match division frequency within 4% tolerance
+                        if abs(actual_sub_hz - sub_hz) / sub_hz <= 0.04 and sub_peak_mag >= 0.08 * max_mag:
+                            cand_bin = sub_b + peak_offset
+                            cand_mag = sub_peak_mag
+                            break
+
+            y1, y2, y3 = mags[cand_bin - 1], cand_mag, mags[cand_bin + 1]
+            denom = 2.0 * (2.0 * y2 - y1 - y3)
+            p = (y3 - y1) / denom if abs(denom) > 1e-9 else 0.0
+            f0_hz = round((cand_bin + p) * bin_width, 1)
+            f0_mag = cand_mag
+
+    harmonics = []
+    sympathetic_octaves = False
+    natural_harmonics = False
+
+    if f0_hz and f0_mag > 0:
+        harmonics.append(HarmonicPeak(
+            harmonic_number=1,
+            frequency_hz=f0_hz,
+            magnitude=round(f0_mag, 5),
+            relative_db=0.0
+        ))
+
+        # Search for harmonics k * f0 up to 8th harmonic or near nyquist
+        for k in range(2, 9):
+            target_hz = k * f0_hz
+            if target_hz >= nyquist_hz * 0.95:
+                break
+            # Search +/- 4% around target to account for piano string inharmonicity / dispersion
+            low_hz = target_hz * 0.96
+            high_hz = target_hz * 1.04
+            k_min_bin = max(0, int(low_hz / bin_width))
+            k_max_bin = min(len(spectrum) - 1, int(high_hz / bin_width))
+
+            if k_max_bin > k_min_bin:
+                k_sub = mags[k_min_bin:k_max_bin + 1]
+                k_peak_mag = max(k_sub)
+                if k_peak_mag >= 0.02 * f0_mag and k_peak_mag > 1e-5:
+                    k_bin = k_min_bin + k_sub.index(k_peak_mag)
+                    if 0 < k_bin < len(spectrum) - 1:
+                        y1, y2, y3 = mags[k_bin - 1], k_peak_mag, mags[k_bin + 1]
+                        denom = 2.0 * (2.0 * y2 - y1 - y3)
+                        p = (y3 - y1) / denom if abs(denom) > 1e-9 else 0.0
+                        actual_hz = round((k_bin + p) * bin_width, 1)
+                    else:
+                        actual_hz = round(k_bin * bin_width, 1)
+
+                    rel_db = round(20.0 * math.log10(k_peak_mag / f0_mag), 1)
+                    harmonics.append(HarmonicPeak(
+                        harmonic_number=k,
+                        frequency_hz=actual_hz,
+                        magnitude=round(k_peak_mag, 5),
+                        relative_db=rel_db
+                    ))
+
+                    if k in (2, 4, 8):
+                        sympathetic_octaves = True
+                    if k in (3, 5, 7):
+                        natural_harmonics = True
+
+    # Search for low-frequency room modes (< 300 Hz) distinct from f0 harmonics and mains hum
+    room_modes = []
+    mode_max_bin = min(len(spectrum) - 2, int(300.0 / bin_width))
+    if mode_max_bin > 5:
+        for b in range(2, mode_max_bin):
+            b_freq = b * bin_width
+            # Skip mains hum regions (50, 60, 100, 120 Hz +/- 4 Hz)
+            if any(abs(b_freq - h) < 4.0 for h in (50.0, 60.0, 100.0, 120.0)):
+                continue
+            # Skip fundamental and harmonic regions
+            if f0_hz and any(abs(b_freq - k * f0_hz) < 6.0 for k in range(1, 9)):
+                continue
+            if mags[b] > mags[b - 1] and mags[b] > mags[b + 1] and mags[b] > 0.08 * max_mag:
+                room_modes.append(round(b_freq, 1))
+
+    desc_parts = []
+    if f0_hz:
+        desc_parts.append(f"Fundamental f0={f0_hz}Hz with {len(harmonics)} harmonic peaks")
+    if sympathetic_octaves:
+        desc_parts.append("Sympathetic octave resonance active")
+    if natural_harmonics:
+        desc_parts.append("Natural harmonic overtone bloom active")
+    if room_modes:
+        desc_parts.append(f"Room resonance modes at {room_modes}Hz")
+    if not desc_parts:
+        desc_parts.append("Acoustic resonance diffuse")
+
+    return AcousticResonance(
+        fundamental_hz=f0_hz,
+        harmonics=tuple(harmonics),
+        sympathetic_octaves_present=sympathetic_octaves,
+        natural_harmonics_present=natural_harmonics,
+        room_resonances=tuple(room_modes[:4]),
+        description=" | ".join(desc_parts)
+    )
+
+
 def inspect_audio_spectrum(samples: list[float], sample_rate: int) -> SpectrumReport:
-    """Run full spectral checks from 10 Hz to 28 kHz and non-musical anomaly watcher."""
+    """Run full spectral checks from 10 Hz to 28 kHz, non-musical anomaly watcher, and acoustic resonance analysis."""
     if not samples:
         raise MusicError(Diagnostic('MUSICMCP-SPECTRUM-EMPTY', 'Cannot inspect empty audio buffer.',
                                     'Supply non-empty audio samples.', 'inspect', 'spectrum', uuid4().hex))
@@ -167,9 +318,9 @@ def inspect_audio_spectrum(samples: list[float], sample_rate: int) -> SpectrumRe
 
     band_energies = {band: 0.0 for band in BAND_LIMITS}
     total_spectral_energy = 0.0
+    bin_width = spectrum[1][0] - spectrum[0][0] if len(spectrum) > 1 else 1.0
 
     if spectrum:
-        bin_width = spectrum[1][0] - spectrum[0][0] if len(spectrum) > 1 else 1.0
         for freq, mag in spectrum:
             energy = (mag ** 2) * bin_width
             total_spectral_energy += energy
@@ -228,7 +379,6 @@ def inspect_audio_spectrum(samples: list[float], sample_rate: int) -> SpectrumRe
 
         # 9. Mains Hum Watcher (Detect isolated prominent peak around 50Hz, 60Hz, 100Hz, or 120Hz)
         TARGET_HUMS = (50.0, 60.0, 100.0, 120.0)
-        # Search window in spectrum bins (40 Hz to 135 Hz)
         hum_min_bin = max(1, int(40.0 / bin_width))
         hum_max_bin = min(len(spectrum) - 2, int(135.0 / bin_width))
 
@@ -239,7 +389,6 @@ def inspect_audio_spectrum(samples: list[float], sample_rate: int) -> SpectrumRe
             peak_bin = hum_min_bin + peak_sub_idx
             peak_mag = mags[peak_bin]
 
-            # Parabolic interpolation on peak for sub-bin precision
             y1 = mags[peak_bin - 1]
             y2 = mags[peak_bin]
             y3 = mags[peak_bin + 1]
@@ -247,16 +396,14 @@ def inspect_audio_spectrum(samples: list[float], sample_rate: int) -> SpectrumRe
             p = (y3 - y1) / denom if abs(denom) > 1e-9 else 0.0
             detected_hum_hz = (peak_bin + p) * bin_width
 
-            # Check if this peak aligns with a known mains hum frequency (within 3.0 Hz)
             closest_target = min(TARGET_HUMS, key=lambda t: abs(detected_hum_hz - t))
             if abs(detected_hum_hz - closest_target) <= 3.0:
-                # Compare to surrounding local floor (±5 bins away)
                 left = max(0, peak_bin - 5)
                 right = min(len(spectrum) - 1, peak_bin + 5)
                 neighbors = [mags[j] for j in range(left, right + 1) if abs(j - peak_bin) > 1]
                 if neighbors:
                     floor = sum(neighbors) / float(len(neighbors))
-                    if floor > 1e-6 and (peak_mag / floor) > 3.0:  # > 9.5 dB prominence
+                    if floor > 1e-6 and (peak_mag / floor) > 3.0:
                         prominence_db = 20.0 * math.log10(peak_mag / floor)
                         anomalies.append(SpectralAnomaly(
                             kind='MAINS_HUM',
@@ -271,6 +418,9 @@ def inspect_audio_spectrum(samples: list[float], sample_rate: int) -> SpectrumRe
     noise_floor = max(1e-5, noise_est)
     snr_db = 20.0 * math.log10((rms_amp + 1e-6) / noise_floor)
 
+    # 11. Acoustic Resonance and Natural Harmonics Analysis
+    resonance = analyze_acoustic_resonance(spectrum, bin_width, nyquist_hz) if spectrum else None
+
     clean = not any(a.severity == 'CRITICAL' for a in anomalies)
     summary_parts = [
         f'Audio {duration:.2f}s @ {sample_rate}Hz (Nyquist {nyquist_hz:.0f}Hz)',
@@ -283,6 +433,11 @@ def inspect_audio_spectrum(samples: list[float], sample_rate: int) -> SpectrumRe
     else:
         summary_parts.append('Watcher: Clean acoustic spectrum (no non-musical artifacts detected across 10Hz-28kHz)')
 
+    if resonance and resonance.harmonics:
+        oct_str = ", sympathetic octaves" if resonance.sympathetic_octaves_present else ""
+        nat_str = ", natural harmonics" if resonance.natural_harmonics_present else ""
+        summary_parts.append(f'Resonance: f0={resonance.fundamental_hz:.1f}Hz ({len(resonance.harmonics)} harmonics{oct_str}{nat_str})')
+
     return SpectrumReport(
         duration_seconds=duration,
         sample_rate=sample_rate,
@@ -294,12 +449,13 @@ def inspect_audio_spectrum(samples: list[float], sample_rate: int) -> SpectrumRe
         band_energies=band_energies,
         anomalies=tuple(anomalies),
         clean_musical_signal=clean,
-        summary=' | '.join(summary_parts)
+        summary=' | '.join(summary_parts),
+        resonance=resonance
     )
 
 
 def watch_audio_bytes(wav_data: bytes) -> SpectrumReport:
-    """Inspect raw WAV audio bytes directly for 10Hz-28kHz range and non-musical artifacts."""
+    """Inspect raw WAV audio bytes directly for 10Hz-28kHz range, non-musical artifacts, and acoustic resonance."""
     if type(wav_data) is not bytes or len(wav_data) < 44:
         raise MusicError(Diagnostic('MUSICMCP-SPECTRUM-INPUT_INVALID', 'Invalid WAV byte stream.',
                                     'Supply valid WAV audio.', 'watch', 'spectrum', uuid4().hex))
@@ -324,7 +480,6 @@ def watch_audio_bytes(wav_data: bytes) -> SpectrumReport:
     if channels == 1:
         mono_samples = [s / 32768.0 for s in unpacked]
     else:
-        # Average channels to mono for inspection
         mono_samples = [(unpacked[i] + unpacked[i + 1]) / (2.0 * 32768.0) for i in range(0, total_samples, 2)]
 
     return inspect_audio_spectrum(mono_samples, rate)

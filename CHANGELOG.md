@@ -2,6 +2,15 @@
 
 ## 0.1.01 — 2026-09-18 — local experimental foundation refinement
 
+- Enhance Spectrum Watcher with Acoustic Resonance & Natural Harmonics Analysis (`reference/spectrum.py`):
+  - Model natural harmonic series ($f_0, 2f_0, 3f_0, 4f_0, \dots$) with parabolic sub-bin frequency interpolation and relative decibel metrics.
+  - Detect sympathetic octave resonance ($2f_0, 4f_0, 8f_0$) honoring acoustic piano open-damper string behavior.
+  - Detect natural string harmonics ($3f_0, 5f_0, 7f_0$) with subharmonic fundamental resolution honoring guitar nodal flageolets.
+  - Detect standing room resonance modes (< 300 Hz) distinct from electrical mains hum (50/60/100/120 Hz).
+  - Invariant verified: Natural acoustic harmonics and room modes are explicitly recognized as acoustic beauty and never flagged as non-musical anomalies.
+  - Expose acoustic resonance metrics across REST visualizer endpoints and render real-time resonance cards in `reference/preview/static/index.html`.
+  - Add 3 acoustic resonance conformance tests in `tests/test_spectrum.py` (total 94 passing tests in 45.9s).
+
 - Define Visualizer Preview Contract in `reference/preview/PREVIEW_CONTRACT.md` establishing loopback security boundary (127.0.0.1), REST inspection endpoints, and interactive host authority review.
 - Implement `PreviewServer` in `reference/preview/server.py` with multi-threaded loopback HTTP server, REST endpoints (`/api/project`, `/api/spectrum`, `/api/proposals`, `/api/alternatives`, `/api/confirm`, `/api/correct`, `/api/restore`, `/api/propose_alternative`), and rich single-page visualizer interface in `reference/preview/static/index.html`.
 - Provide interactive visual inspection of 10-band acoustic frequency spectrum (0 Hz to >28 kHz), non-musical anomaly protection (mains hum, infrasonic rumble, ultrasonic leakage, clipping, DC offset), and active phrases by scope.

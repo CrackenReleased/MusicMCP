@@ -36,7 +36,9 @@ from reference.core import (
     phrase,
 )
 from reference.spectrum import (
+    AcousticResonance,
     BAND_LIMITS,
+    HarmonicPeak,
     SpectralAnomaly,
     SpectrumReport,
     watch_audio_bytes,
@@ -97,6 +99,22 @@ def serialize_music_obj(obj: Any) -> Any:
             "frequency_hz": round(obj.frequency_hz, 2) if obj.frequency_hz is not None else None,
             "description": obj.description,
         }
+    if isinstance(obj, HarmonicPeak):
+        return {
+            "harmonic_number": obj.harmonic_number,
+            "frequency_hz": round(obj.frequency_hz, 1),
+            "magnitude": round(obj.magnitude, 5),
+            "relative_db": round(obj.relative_db, 1),
+        }
+    if isinstance(obj, AcousticResonance):
+        return {
+            "fundamental_hz": round(obj.fundamental_hz, 1) if obj.fundamental_hz is not None else None,
+            "harmonics": [serialize_music_obj(h) for h in obj.harmonics],
+            "sympathetic_octaves_present": obj.sympathetic_octaves_present,
+            "natural_harmonics_present": obj.natural_harmonics_present,
+            "room_resonances": [round(r, 1) for r in obj.room_resonances],
+            "description": obj.description,
+        }
     if isinstance(obj, SpectrumReport):
         return {
             "duration_seconds": round(obj.duration_seconds, 3),
@@ -110,6 +128,7 @@ def serialize_music_obj(obj: Any) -> Any:
             "anomalies": [serialize_music_obj(a) for a in obj.anomalies],
             "clean_musical_signal": obj.clean_musical_signal,
             "summary": obj.summary,
+            "resonance": serialize_music_obj(obj.resonance) if obj.resonance else None,
         }
     if is_dataclass(obj):
         return asdict(obj)
