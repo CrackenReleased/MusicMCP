@@ -7,6 +7,7 @@
 
 - Add a read-only GitHub Actions check for the existing synthetic demo and full unittest suite on Windows and Ubuntu, Python 3.11 with Node 22 for preview-script coverage. No package publishing or deployment step.
 - Document clean source checkout commands, exact locally observed validation, revision-specific CI evidence, and the separate musician-approved recording gate.
+- First clean-checkout workflow run at `c4a184a` passed the demo and 142 tests on both Windows and Ubuntu (Python 3.11, Node 22); no package release was made.
 
 ## Documentation — v0.1.01 status reconciliation (Unreleased)
 
