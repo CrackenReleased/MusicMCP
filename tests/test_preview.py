@@ -73,7 +73,7 @@ class TestPreviewServer(unittest.TestCase):
         url = f"{self.server.url}{path}"
         req = urllib.request.Request(url)
         try:
-            with urllib.request.urlopen(req, timeout=3.0) as resp:
+            with urllib.request.urlopen(req, timeout=10.0) as resp:
                 data = resp.read()
                 content_type = resp.headers.get("Content-Type", "")
                 if "application/json" in content_type:
@@ -88,7 +88,7 @@ class TestPreviewServer(unittest.TestCase):
         raw = json.dumps(body).encode("utf-8")
         req = urllib.request.Request(url, data=raw, headers={"Content-Type": "application/json"})
         try:
-            with urllib.request.urlopen(req, timeout=3.0) as resp:
+            with urllib.request.urlopen(req, timeout=10.0) as resp:
                 return resp.status, json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as err:
             return err.code, json.loads(err.read().decode("utf-8"))

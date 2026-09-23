@@ -52,13 +52,13 @@ def post_json(url: str, data: dict) -> dict:
         data=json.dumps(data).encode("utf-8"),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=3.0) as resp:
+    with urllib.request.urlopen(req, timeout=10.0) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
 def get_json(url: str) -> dict:
     req = urllib.request.Request(url)
-    with urllib.request.urlopen(req, timeout=3.0) as resp:
+    with urllib.request.urlopen(req, timeout=10.0) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
