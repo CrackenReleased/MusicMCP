@@ -30,7 +30,7 @@ This contract defines a provider-neutral boundary for structured musical judgmen
 5. **No Fake Precision**:
    Fabricated confidence metrics are prohibited. Structured qualitative uncertainty (`LOW`, `MEDIUM`, `HIGH`, `AMBIGUOUS`, `UNRESOLVED`) remains authoritative. Numerical probabilities are permitted only with provider provenance and task calibration.
 6. **Graceful Degradation & BYOK**:
-   External evaluators are Bring-Your-Own-Key (BYOK, e.g. `TYPESAFE_API_KEY`). If credentials are absent or the provider is unreachable, the system degrades gracefully with `CAPABILITY_UNAVAILABLE`. Core state remains 100% safe.
+   External evaluators are Bring-Your-Own-Key (BYOK, e.g. `TYPESAFE_API_KEY`). Absent credentials return `CAPABILITY_UNAVAILABLE`; attempted provider requests that fail return `ERROR`. Neither outcome authorizes a core mutation.
 7. **Incremental Evidence Compatibility**:
    Evidence structures support bounded temporal windows (`EvidenceWindow`, `DetectedEvent`) for future live-listening, score alignment, and performance tracking without imposing batch-only constraints.
 
@@ -80,3 +80,32 @@ This contract defines a provider-neutral boundary for structured musical judgmen
 | Credentials not configured | `MUSICMCP-EVALUATION-UNAVAILABLE` | DEGRADED | `True` | Configure provider credentials via environment or use deterministic evaluator. |
 | Provider network/API error | `MUSICMCP-EVALUATION-FAILED` | DEGRADED | `True` | Review provider connectivity; core state safe. |
 | Malformed evaluation input | `MUSICMCP-EVALUATION-INVALID` | ERROR | `True` | Verify request adheres to Evaluation Contract. |
+
+
+## 5. Implemented evaluation limits
+
+The deterministic evaluator implements the named Boolean conformance rules and score-event alignment. It does not implement arbitrary musical choice or numeric score judgments; those capabilities are reported false. A question with no implemented rule returns `CAPABILITY_UNAVAILABLE`, `decision=None`, no probabilities, and `UNRESOLVED` uncertainty. Candidate order is never evidence for a fallback decision.
+
+The TypeSafe adapter constructs a JSON POST and parses the provider response. Transport regression tests intercept HTTP to verify serialization and response preservation; they do not certify the configured endpoint, provider schema, model availability, or calibration against a live service. A connection failure is tested separately from missing credentials so an internal serialization error cannot masquerade as verified network error handling.
+
+
+## 6. Required evidence and response validation (milestone 1)
+
+Request construction rejects unknown evaluation types, non-mapping context, empty/non-text questions, and non-sequence, empty-string or duplicate candidate entries with ValueError. CHOICE and ALIGNMENT still require candidates. This validates the request envelope; it does not claim arbitrary nested musical context is valid.
+
+Named deterministic rules require BOOLEAN requests. Required fields are:
+
+| Rule | Required evidence | Accepted representation |
+| --- | --- | --- |
+| Locked phrase comparison | locked_phrase, candidate_phrase | Lists/tuples of core Note objects; empty phrases are valid evidence. |
+| Generated-origin check | origin | human, generated, or interpreted. |
+| Authority membership check | actor_operations, actor_scopes, operation, scope | Collections of non-empty strings and non-empty target strings; explicitly empty grant collections are valid and produce a negative judgment. |
+| Alignment | observed_pitch, observed_onset, score_events | Non-empty pitch text, finite nonnegative numeric onset (not Boolean), mapping of event IDs to pitch/onset pairs. Every candidate except the reserved unresolved option needs event evidence. |
+
+A missing or null field returns UNRESOLVED with no decision; a present malformed field returns ERROR with no decision. Missing candidate event evidence also returns UNRESOLVED. A named Boolean rule requested with a different result type is unavailable. No automatic False or zero-onset substitute is used. These checks validate evidence shape, not recording accuracy, identity authentication, or musicological truth.
+
+Injected clients and HTTP results share one validator. Decisions must be strict Booleans, listed candidate strings, or finite numeric scores in [0, 1] (Booleans do not count as scores). Null/missing decisions, invalid explanation types and unknown uncertainty labels fail with ERROR. An explicitly non-success provider status is surfaced as an adapter ERROR rather than promoted to success. A listed ALIGNMENT decision of unresolved yields UNRESOLVED; explicit AMBIGUOUS/UNRESOLVED uncertainty likewise prevents SUCCESS. Valid False and score zero are retained.
+
+Probability distributions must be non-empty mappings with non-empty string keys, finite values in [0, 1], and a total within 1e-6 of one. This tightens the earlier 0.95–1.05 tolerance. Candidate distributions may cover a subset of requested candidates; omitted candidates carry no assigned mass. BOOLEAN distributions use true/false string keys. SCORE does not accept candidate probabilities. Wrong keys, empty distributions and invalid calibration types are errors. Calibration defaults to false on both transport paths; an explicit true value is a recorded provider claim, not independent verification of calibration.
+
+Regression ownership: tests/test_evaluation.py::TestEvaluationValidation and the confirmed-state test. All statuses remain advisory; no host authority is granted by validation. No live provider compatibility, external calibration or musical accuracy certification is implied.

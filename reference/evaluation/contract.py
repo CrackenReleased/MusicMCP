@@ -7,6 +7,7 @@ and incremental evidence windows.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
+import math
 import time
 from typing import Any, Mapping, Sequence
 from uuid import uuid4
@@ -40,9 +41,18 @@ class ProbabilityDistribution:
     calibrated: bool = False
 
     def __post_init__(self):
-        total = sum(self.probabilities.values())
-        if not (0.95 <= total <= 1.05):
-            raise ValueError(f"Probabilities must sum to approximately 1.0 (got {total:.4f}).")
+        if not isinstance(self.probabilities, Mapping) or not self.probabilities:
+            raise ValueError("Probabilities must be a non-empty mapping.")
+        if type(self.calibrated) is not bool:
+            raise ValueError("Calibration must be an explicit Boolean claim.")
+        for key, value in self.probabilities.items():
+            if not isinstance(key, str) or not key.strip():
+                raise ValueError("Probability keys must be non-empty strings.")
+            if type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 1:
+                raise ValueError("Probabilities must be finite numbers between zero and one.")
+        if not math.isclose(sum(self.probabilities.values()), 1.0, rel_tol=0, abs_tol=1e-6):
+            raise ValueError("Probabilities must sum to one within 1e-6.")
+
 
 
 @dataclass(frozen=True)
@@ -66,7 +76,17 @@ class EvaluationRequest:
     request_id: str = field(default_factory=lambda: uuid4().hex)
 
     def __post_init__(self):
-        if not self.question.strip():
+        if not isinstance(self.evaluation_type, EvaluationType):
+            raise ValueError("Evaluation type must be an EvaluationType.")
+        if not isinstance(self.context, Mapping):
+            raise ValueError("Evaluation context must be a mapping.")
+        if not isinstance(self.candidates, (tuple, list)) or any(
+            not isinstance(c, str) or not c.strip() for c in self.candidates
+        ):
+            raise ValueError("Candidates must be a sequence of non-empty strings.")
+        if len(set(self.candidates)) != len(self.candidates):
+            raise ValueError("Candidates must be unique.")
+        if not isinstance(self.question, str) or not self.question.strip():
             raise ValueError("Evaluation question must be non-empty text.")
         if self.evaluation_type in (EvaluationType.CHOICE, EvaluationType.ALIGNMENT) and not self.candidates:
             raise ValueError(f"Candidates are required for evaluation type '{self.evaluation_type.value}'.")
