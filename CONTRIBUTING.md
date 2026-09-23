@@ -18,6 +18,8 @@ Verify the canonical repository is `https://github.com/CrackenReleased/MusicMCP.
 
 The reference core targets Python 3.11+ with no external runtime dependencies. Follow existing test and packaging conventions. Before adding a dependency, establish why the standard library or existing code cannot reasonably serve the need, then document its licensing, network/data access, failure behavior, and replacement route.
 
+The current project is run from source; [README.md](README.md#run-it) gives clean-checkout commands. The [source conformance workflow](.github/workflows/conformance.yml) runs the demo and full suite on Windows and Ubuntu with Python 3.11 and Node 22 after a pull request or `main` push. Run the same commands locally before submitting; check the actual CI result after submission. A skipped Node-backed preview test is not a pass. Human review of recording provenance, intended notes, and audition remains separate from automation under [CONFORMANCE.md](CONFORMANCE.md#source-release-gate).
+
 ## Review expectations
 
 A contribution should explain the problem, resulting behavior, validation command/results, and limitations. For security-sensitive changes, identify the actual trust boundary and attack being prevented. A frozen object is not proof of malicious-code isolation. A successful demo is not proof of transaction safety.

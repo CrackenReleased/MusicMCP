@@ -6,7 +6,7 @@ The governing constitution is [PHILOSOPHY.md](PHILOSOPHY.md). Normative behavior
 
 ## Current boundary
 
-The first reference core uses Python 3.11+ and the standard library. It exercises evidence retention, observations, competing interpretations, explicit human confirmation and correction, locked constraints, scoped host permissions, and transactional immutable revision snapshots with restore. It is experimental and in-process. It does not implement MCP transport, audio analysis, a GUI, file export, or durable storage.
+The reference core uses Python 3.11+ and the standard library. It exercises evidence retention, observations, competing interpretations, explicit human confirmation and correction, locked constraints, scoped host permissions, and transactional immutable revision snapshots with restore. It remains experimental and in-process. The core itself has no transport, audio analysis, GUI, export, or disk dependency. Separate experimental reference silos now implement those capabilities: [MCP gateway](reference/MCP_CONTRACT.md), [analyzer](reference/ANALYZER_CONTRACT.md), [preview](reference/preview/PREVIEW_CONTRACT.md), [storage](reference/storage/STORAGE_CONTRACT.md), and format adapters. Their presence does not prove production security, full interoperability, or musical accuracy.
 
 Python object boundaries organize trusted code; they do not sandbox malicious code running in the same process. [SECURITY.md](SECURITY.md) states the trust assumptions. Future untrusted analyzers require a separate security boundary before deployment.
 
@@ -30,7 +30,7 @@ Validate requests and preconditions, verify authority and active constraints, co
 
 Snapshots and provenance must not become mutable aliases held by callers. Restoration is a new attributable action that respects current authority and constraints; it must not erase history or silently reinstate old permissions. Evidence and historical interpretation remain distinct from the currently authoritative phrase.
 
-In-memory atomicity does not imply crash durability, distributed transactions, or reversal of external side effects. Any future adapter must declare its exact commit, compensation, and recovery guarantees. Report incomplete compensation honestly; never label it a successful rollback.
+In-memory atomicity does not imply crash durability, distributed transactions, or reversal of external side effects. The separate SQLite silo has tested local transaction and process-interruption behavior, without a hardware power-loss guarantee. Every adapter must declare its exact commit, compensation, and recovery guarantees. Report incomplete compensation honestly; never label it a successful rollback.
 
 ## Contracts make silos replaceable
 
@@ -46,7 +46,7 @@ Use [CONFORMANCE.md](CONFORMANCE.md) to demonstrate protections through adversar
 
 ## Evaluation provider boundary and structured interpretation
 
-The core contract establishes a provider-neutral boundary for musical evaluation and interpretation (`EvaluationProvider`, `EvaluationRequest`, `EvaluationResult`, `ProbabilityDistribution`, `EvaluationProvenance`). External evaluators (such as TypeSafe Jev, frontier Ai models, or local neural engines) are strictly optional and advisory:
+The separate evaluation silo establishes a provider-neutral boundary for musical evaluation and interpretation (`EvaluationProvider`, `EvaluationRequest`, `EvaluationResult`, `ProbabilityDistribution`, `EvaluationProvenance`). External evaluators (such as TypeSafe Jev, frontier Ai models, or local neural engines) are strictly optional and advisory:
 
 1. **Interpretation is not mutation**: An evaluator proposes judgments (e.g. choice distributions, boolean compliance, score alignment); it does not hold an `AuthoritySession` and cannot mutate Authoritative Musical State (AMS).
 2. **Provider failure containment**: If an external provider is missing credentials (`CAPABILITY_UNAVAILABLE`), times out, or errors, core operations, revision history, and authority continue uninterrupted.
@@ -62,6 +62,16 @@ Physical sound and musical notation occupy different layers:
 2. **Normalized musical evidence**: Bounded temporal windows (`EvidenceWindow`) containing detected acoustic events (`DetectedEvent`) with onsets, durations, and candidate pitches.
 3. **Musical interpretation**: Evaluators resolve bounded evidence against candidate score events (`ScoreAlignment`) to support live score-following, expressive vibrato disambiguation, and ornament recognition without forcing batch-only whole-file constraints.
 4. **Authoritative state governance**: Human intent remains sovereign; no score-following inference automatically alters locked musical notation without explicit human authority.
+
+
+## Visual, Auditory, and Physical Sensory Verification (Zero Headless Laziness)
+
+Headless unit tests on synthetic numbers or sine waves alone do not constitute proof that a musical software system works:
+
+1. **Auditory reality before claims of transcription**: An audio ingestion or analysis component has not "heard" music until real multi-harmonic acoustic audio (with overtones, sympathetic resonance, and natural decays) has been fed into it, processed through autocorrelation/FFT, and verified.
+2. **Visual engraving before claims of review**: A human authority interface has not "engraved" music until notes, durations, accidentals, and rests are visually rendered on a standard musical staff and verified in an active graphical viewport.
+3. **Physical playback before claims of confirmation**: A human composer cannot make an informed, authoritative confirmation of proposed musical material without the ability to audibly audition the playback of the phrase in their review environment.
+4. **Physical host persistence**: Interactive web decks and CLI shells must persist authoritative state transitions directly to the durable SQLite `.musicmcp` container on disk, never leaving state orphaned in a volatile runtime process.
 
 ## Evolution and maintenance
 

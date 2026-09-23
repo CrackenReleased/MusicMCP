@@ -4,7 +4,7 @@ Idea vault · 2026-09-18
 
 > Nothing in this file is a commitment. Nothing valuable gets forgotten.
 
-These ideas originate in the founding directive. The current milestone remains the experimental v0.1.0 in-process reference core. An idea graduates only through a recorded decision, scoped contract, and explicit acceptance criteria; a listing here does not authorize implementation.
+These ideas originate in the founding directive. The declared package/schema version remains experimental v0.1.01. Several ideas below now have bounded reference implementations and contracts (monophonic analysis, stdio gateway, format adapters, local storage, collaboration, rules, alternatives, and evaluation). Their broader product aims and evidence gates remain open; a listing here does not authorize scope expansion. See [current status](README.md) and [conformance limits](CONFORMANCE.md).
 
 | Idea | Why it matters | Evidence needed before promotion |
 | --- | --- | --- |

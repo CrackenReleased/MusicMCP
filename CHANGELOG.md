@@ -1,3 +1,100 @@
+## Unreleased - preview ingestion atomicity (implementation v0.1.01)
+
+- Keep upload evidence/observation/proposal creation and generated-alternative observation/proposal creation inside the existing mutation/persistence recovery boundary. Failed analysis or save no longer leaves partial in-memory records.
+- Add red/green regressions for invalid upload and failed alternative save. No version or schema change.
+
+## Unreleased - source conformance gate (implementation v0.1.01)
+
+- Add a read-only GitHub Actions check for the existing synthetic demo and full unittest suite on Windows and Ubuntu, Python 3.11 with Node 22 for preview-script coverage. No package publishing or deployment step.
+- Document clean source checkout commands, exact locally observed validation, revision-specific CI evidence, and the separate musician-approved recording gate.
+
+## Documentation — v0.1.01 status reconciliation (Unreleased)
+
+- Separate the in-memory core from implemented experimental reference silos in the README, specification, architecture, security, diagnostics, conformance, and idea vault. State verified local behaviors and remaining evidence gaps without claiming a new release.
+- Align the specification's probability total tolerance with the implemented 1e-6 contract. Historical 0.1.02/0.1.03 headings below are retained as records of earlier work; the current package and storage schema still declare v0.1.01.
+
+## Unreleased — stored project relationship validation (implementation v0.1.01)
+
+- Reject stored evidence, observation, proposal, revision, and restoration links that are missing or inconsistent; report them through `verify_integrity` and a storage diagnostic on reopen.
+- Validate serialized notes, constraints, attribution, and publication origin against the recorded causal chain; reject boolean duration fields and unexpected serialized fields. Add in-memory and disposable-file corruption regressions. No schema or version change.
+- Verify process termination immediately before a real save commits leaves the prior revision and state token intact. Hardware power loss remains unverified.
+
+## Unreleased — preview page width containment (implementation v0.1.01)
+
+- Keep the three-column and single-column review deck within the viewport when fixed-width notation canvases render; scroll each staff inside its card.
+- Wrap header controls and proposal badges at narrow widths. Browser regression passed at 1250px, 768px, and 375px; preview suite passed 24 tests. No version or schema change.
+
+## Unreleased — pitch-aware preview staff bounds (implementation v0.1.01)
+
+- Size the staff canvas vertically to the visible pitch range so high and low notes, ledger lines, stems and pitch labels remain inside the canvas without changing note data.
+- Extend shipped-renderer regression coverage for C#8 and C3. Preview suite: 24 passed; scoped browser rendering verified. Horizontal page overflow remains a separate issue.
+## Unreleased — proposal review status (implementation v0.1.01)
+
+- Count Pending and Reviewed proposals from revision history; retain reviewed originals and label each card explicitly.
+- Extend the existing executable browser-script regression for initial, corrected and mixed/historical status. No version or schema change.
+
+## Unreleased — correction editor source (implementation v0.1.01)
+
+- Load the selected proposal's current confirmed notes into a clean correction editor, and label the source and button behavior.
+- Preserve dirty drafts through refresh and same-proposal reselection; avoid clearing newer input when a correction response returns.
+- Add executable browser-script regression and scoped browser verification. Original proposal content, confirmation semantics and version remain unchanged.
+
+## Documentation — local audio walkthrough
+
+- Record authorized fixture workflow through browser correction, reopen and MusicXML/MIDI round trips; add reusable conformance checklist and three unfixed UI findings. Musical acceptance remains open. No implementation version change.
+
+## Unreleased — evaluation validation (implementation v0.1.01)
+
+- Require deterministic rule evidence; distinguish missing evidence, malformed input and valid negative judgments.
+- Validate provider decisions, probability distributions, uncertainty and calibration claims through one mock/HTTP response boundary.
+- Reject invalid request envelopes and tighten probability normalization tolerance to 1e-6; preserve valid False and zero results.
+- Add eight evaluation validation tests and expand confirmed-state coverage. No release or storage schema change.
+
+## Documentation — maturation handoff revision 1
+
+- Document six prioritized maturation milestones, acceptance checks and Antigravity continuation guidance in handoff.md. No implementation or release version change.
+
+## Unreleased — evaluation reliability (implementation v0.1.01)
+
+- Import JSON support so provider request construction reaches the HTTP transport.
+- Return capability unavailable for unsupported deterministic questions instead of inventing a successful first-candidate/Boolean decision; report unsupported choice/score capabilities accurately.
+- Add request/response and unsupported-question regressions; strengthen transport-error and confirmed-state tests. No release or schema change.
+
+## Unreleased — persistence/recovery fixes (implementation v0.1.01)
+
+- Make save conflict checks, legacy grant migration, forced clearing, and writes one transaction; preserve the prior database on failure.
+- Load and verify from consistent snapshots; serialize workspace saves through token publication.
+- Preserve preview host policy, validation, and grants during recovery; report unknown disk state honestly and block writes when reconciliation fails.
+- Add nine regressions in existing storage/preview test modules. No release or schema version change; this repairs existing behavior.
+
+## [0.1.04] - 2026-09-19
+
+### Fixed
+- **XSS & HTML Injection Defense**: Added HTML entity escaping across `index.html` for proposal scope, mode, uncertainty, origin, actor, reason, note pitches, duration, and acoustic reports.
+- **Localhost & Origin Validation**: Restricted preview server endpoints against foreign Origin, foreign Host headers, cross-site fetch sites, and untyped/form POST payloads.
+- **Storage Concurrency & Stale Save Conflict Check**: Added `state_token` tracking and pre-save revision conflict checks in `SqliteStorageEngine.save_workspace`, preventing stale writes from overwriting history.
+- **Provider Authenticity in Evaluation Silo**: Replaced synthetic fallback in `TypeSafeJevAdapter` live branch with genuine HTTP execution and graceful error reporting with secret redaction.
+- **Memory-Disk Consistency on Persist Failure**: Added transactional rollback in `PreviewServer` mutating endpoints ensuring memory is never left ahead of disk when saves fail.
+- **Draft Preservation During Polling**: Prevented 5-second UI polling timer from resetting active proposal selection or overwriting in-progress correction edits.
+- **Clean Force Initialization**: Fixed `musicmcp init --force` to clear all previous project tables rather than retaining obsolete revisions and evidence.
+- **Schema & Revision Parent Chain Validation**: Enforced strict `schema_version` and revision `parent` continuity checks during SQLite database loading.
+- **Multi-Grant Actor Persistence**: Updated `grants` table schema to auto-incrementing primary key, enabling multiple distinct scoped grants per actor without permission merging.
+
+## [0.1.03] - 2026-09-19
+
+### Added
+- **HTML5 Canvas 2D Musical Staff Notation Engraving (`drawStaff`)**: Live rendering of standard 5-line treble staff, clef, pitch positions, ledger lines, solid/hollow note heads, duration stems/flags, accidentals (`♯`/`♭`), rests, and measure barlines.
+- **Web Audio API Acoustic Synthesizer (`playPhraseAudio`)**: Auditory auditioning of phrases with fundamental frequencies, harmonic overtones, warm attack/decay envelopes, and active glowing note highlights during playback.
+- **Direct Audio Drag-and-Drop & File Upload Zone**: Web interface upload card wired to `/api/upload`, ingesting 16-bit PCM mono WAV audio into evidence, generating pitch proposals, and rendering 10-band FFT spectrum energy bars.
+- **SQLite Project Auto-Persistence (`PreviewServer.persist()`)**: Synchronous disk persistence of all review deck state mutations (`/api/confirm`, `/api/correct`, `/api/restore`, `/api/upload`, `/api/propose_alternative`) to the target `.musicmcp` container.
+- **Host CLI Subcommand `musicmcp serve`**: Command to launch the interactive local visualizer deck on loopback with optional browser auto-open.
+- **Acoustic Audio Test Fixture (`audio/acoustic_melody.wav`)**: 158,804-byte 16-bit 44.1kHz PCM mono multi-harmonic audio file for real-world acoustic verification.
+- **Physical Verification Artifacts**: Recorded browser session (`review_deck_proof_1789790264268.webp`), full-resolution screenshots (`initial_page_load_1789790352457.png`, `ams_revision_1_published_1789790456306.png`, `final_verification_state_1789790558204.png`), and validated export files (`audio/melody.xml`, `audio/melody.mid`).
+
+### Fixed
+- **Systemic Headless Verification Gap**: Resolved the disconnect between purely synthetic unit-test assertions and actual sensory/interactive user interfaces.
+- **PreviewServer Ephemeral State Gap**: Resolved issue where web UI actions were kept only in-memory and never saved to the SQLite database file on disk.
+
 # Changelog
 
 ## 0.1.02 — 2026-09-18 — Provider-Neutral Evaluation Silo & TypeSafe Jev Adapter

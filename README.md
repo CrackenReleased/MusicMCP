@@ -4,13 +4,13 @@
 
 Open musical intelligence infrastructure connecting human intention, evidence, responsible machine assistance, and existing musical tools. Models propose; explicit human authority governs changes. MusicXML, MIDI, notation applications, and MCP transports will connect through replaceable boundaries.
 
-## Current status: v0.1.01 foundation, analyzer, spectrum watcher, MCP transport, adapters, storage, host CLI, visualizer preview, collaboration, rules & alternatives
+## Current status: experimental source build v0.1.01
 
-The first build provides a documented, executable **in-process authority kernel**, not a transcription product or MCP server. It preserves supplied evidence and competing interpretations, supports human confirmation/correction, rejects unauthorized and stale changes, retains provenance, and restores historical phrase content through new revisions.
+The **in-process authority kernel** preserves supplied evidence and competing interpretations, supports human confirmation/correction, rejects unauthorized and stale changes, retains provenance, and restores historical phrase content through new revisions. The kernel itself is neither an MCP server nor an audio analyzer. Separate experimental reference modules now implement a stdio model-facing gateway, monophonic WAV analysis and spectrum inspection, SQLite project storage, MusicXML/MIDI adapters, a host CLI, a loopback review preview, evaluation, collaboration, rules, and alternatives. These modules do not establish production readiness or full format/protocol interoperability. See [conformance and limits](CONFORMANCE.md) and each module's contract.
 
 Observations and proposals require their own producer identity/version. Locks retain who supplied them and why; revisions preserve those records. Qualitative uncertainty describes a producer's assessment and never grants authority. See [source migration](DEPRECATION.md) for the 0.1.0 → 0.1.01 API changes and [host approval obligations](SECURITY.md) before integrating the core.
 
-No audio analysis, model integration, MCP transport, GUI, notation rendering, file export, or durable storage is implemented. Nothing here changes CrackenReleased.com or other projects. Original Apache-2.0 licensing is preserved.
+The source build uses Python 3.11+ and no third-party runtime dependencies. It includes local SQLite `.musicmcp` persistence, bounded monophonic PCM WAV analysis, spectral inspection, MusicXML/MIDI adapters with loss reporting, CLI commands, and a browser review preview with staff drawing and Web Audio playback. The real-recording walkthrough verified a mechanical review/reopen/export path; source provenance, intended notes, musical accuracy, independent consumer interoperability, hardware power-loss durability, and live provider compatibility remain unverified.
 
 ## Run it
 
@@ -21,13 +21,34 @@ python -B -m reference.demo
 python -B -m unittest discover -s tests -v
 ```
 
+For a clean source checkout:
+
+```sh
+git clone https://github.com/CrackenReleased/MusicMCP.git
+cd MusicMCP
+python -B -m reference.demo
+python -B -m unittest discover -s tests -v
+```
+
+This is a source-run project; `pyproject.toml` does not declare a published distribution or install command. The [source conformance workflow](.github/workflows/conformance.yml) runs the same demo and tests on GitHub-hosted Windows and Ubuntu with Python 3.11 and Node 22. Check the actual workflow result for the revision being reviewed. The [recording review checklist](CONFORMANCE.md#local-recording-review-checklist-added-2026-09-21-192935) is a separate human/musical gate.
+
 ### Interactive Host CLI
 
 Execute the host-held review shell and authority interface:
 
 ```sh
-python -m reference.cli --help
-python -m reference.demo_cli
+# Start interactive visualizer review deck in browser
+python -m reference.cli serve my_project.musicmcp --open
+
+# Ingest acoustic audio evidence and propose notes
+python -m reference.cli propose-audio my_project.musicmcp acoustic.wav --scope melody
+
+# Review and confirm proposals with composer authority
+python -m reference.cli review my_project.musicmcp --action confirm --reason "Composer confirmation"
+
+# Export authoritative state to standard notation and performance formats
+python -m reference.cli export my_project.musicmcp --scope melody --format musicxml --out score.xml
+python -m reference.cli export my_project.musicmcp --scope melody --format midi --out score.mid
 ```
 
 ### Provider-Neutral Evaluation Silo & Jev Adapter
@@ -55,7 +76,7 @@ Evidence → observation → competing interpretation / suggestion
              atomic authoritative revision publication
 ```
 
-Model-facing code must never receive the privileged authority session. The host handles human identity and approvals. Python object boundaries are not a sandbox against malicious code in the same process. All retained music disappears when this in-memory workspace is discarded; this is not a durable music project store.
+Model-facing code must never receive the privileged authority session. The host handles human identity and approvals. Python object boundaries are not a sandbox against malicious code in the same process. A core-only workspace is volatile; hosts using the separate SQLite storage silo can persist and reopen a `.musicmcp` project. Neither path authenticates a human or proves that the musician approved a transcription.
 
 ## Read the repository
 
@@ -75,4 +96,4 @@ Model-facing code must never receive the privileged authority session. The host 
 | [goals_and_dreams.md](goals_and_dreams.md) | Future ideas, not commitments |
 | [CHANGELOG.md](CHANGELOG.md), [error_history_log.md](error_history_log.md), [DEPRECATION.md](DEPRECATION.md) | Changes, failures and migration rules |
 
-The [founding directive](01_MusicMCP_Codex_Founding_Build_Directive.md) is preserved as supplied. The canonical repository is [CrackenReleased/MusicMCP](https://github.com/CrackenReleased/MusicMCP). See [LICENSE](LICENSE) for Apache-2.0 terms. This README was expanded in the v0.1.0 founding build.
+The [founding directive](01_MusicMCP_Codex_Founding_Build_Directive.md) is preserved as supplied. The canonical repository is [CrackenReleased/MusicMCP](https://github.com/CrackenReleased/MusicMCP). See [LICENSE](LICENSE) for Apache-2.0 terms. Historical version labels in older entries describe the work recorded then; the current declared package and storage schema version is v0.1.01, with newer work Unreleased.

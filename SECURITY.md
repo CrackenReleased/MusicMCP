@@ -1,14 +1,14 @@
 # Security
 
-Scope: experimental v0.1.01 reference core · 2026-09-18
+Scope: experimental v0.1.01 core and separate reference silos · updated 2026-09-22
 
 ## Trust boundary
 
-The reference implementation runs inside a trusted Python 3.11+ host. The host identifies authorized humans, controls permission grants, and supplies explicit confirmations and corrections. Model output, analyzer output, imported evidence, metadata, and future transport requests are untrusted data. A field claiming `human` origin does not establish a human identity.
+The reference implementation runs inside a trusted Python 3.11+ host. The host identifies authorized humans, controls permission grants, and supplies explicit confirmations and corrections. Model output, analyzer output, imported evidence, metadata, and transport requests are untrusted data. A field claiming `human` origin does not establish a human identity.
 
-Models must never receive the host's approval or permission-management interface. Exposing a callable that can grant authority as an MCP tool would violate the security model even if its prompt says to ask permission first. Any future transport must authenticate its callers and keep host authority separate from model-visible capabilities.
+Models must never receive the host's approval or permission-management interface. Exposing a callable that can grant authority as an MCP tool would violate the security model even if its prompt says to ask permission first. The experimental stdio MCP gateway is model-facing and must remain read/proposal-only; a remotely exposed transport would need an explicit caller-authentication boundary and must keep host authority separate.
 
-The core's immutable values and transactional publication protect normal API use. They are **not a sandbox against malicious same-process Python code**, process-memory modification, a compromised operating system, or a malicious trusted host. There is no durable storage, network service, MCP transport, or cryptographic audit ledger in this foundation. Do not deploy it as if those protections exist.
+The core's immutable values and transactional publication protect normal API use. They are **not a sandbox against malicious same-process Python code**, process-memory modification, a compromised operating system, or a malicious trusted host. The separate reference tree now has SQLite storage, a loopback preview service, and a stdio MCP gateway; none provides a cryptographic audit ledger or turns core object boundaries into a security sandbox. Do not deploy these experimental surfaces as production security controls.
 
 ## Authoritative-state protection
 
@@ -22,9 +22,9 @@ Future remote or multi-user hosts must define identity, authorization lifetime, 
 
 ## Data and secrets
 
-Do not commit credentials, private recordings, unpublished compositions, personal metadata, or provider tokens. Use synthetic or explicitly redistributable fixtures. Evidence is retained in process by this reference core; it is not automatically uploaded, persisted, or erased from all memory copies when a Python object is discarded. Hosts must document their own retention and access rules.
+Do not commit credentials, private recordings, unpublished compositions, personal metadata, or provider tokens. Use synthetic or explicitly redistributable fixtures. The core retains evidence in process; it does not automatically upload, persist, or erase every memory copy when a Python object is discarded. A host may persist evidence through the separate SQLite silo. Hosts must document retention and access rules for stored projects and recordings.
 
-Diagnostics must not include secret values or dump raw evidence by default. A useful failure report identifies scope, state safety, transaction outcome, and trace context without exposing an entire musical work. File parsers and network ingestion are future boundaries requiring size limits, format validation, resource limits, and denial-of-service analysis.
+Diagnostics must not include secret values or dump raw evidence by default. A useful failure report identifies scope, state safety, transaction outcome, and trace context without exposing an entire musical work. Existing file parsers and the local preview ingestion surface require continued size-limit, format-validation, resource-limit, and denial-of-service review before deployment claims.
 
 ## Dependencies and optional capabilities
 
@@ -32,10 +32,10 @@ The initial runtime uses only the Python standard library. This reduces the depe
 
 Before adding a provider, parser, analyzer, or application adapter, document its license, data flows, network access, retention, trust assumptions, failure modes, and replacement route. Execute untrusted code behind an appropriate process or service boundary; a Python package directory does not provide security isolation. Optional components must be disableable without corrupting state or disabling unrelated capabilities. An unavailable or security-blocked capability must report that condition explicitly.
 
-External providers may retain data or change their terms. No provider integration or rights adjudication is included here. Policy decisions must remain separate from technical capability and human authorization.
+External providers may retain data or change their terms. The optional TypeSafe Jev adapter has a reference integration, but live provider compatibility and rights adjudication are not established here. Policy decisions must remain separate from technical capability and human authorization.
 
 
-## Evaluation Provider Security & Credential Isolation (v0.1.02)
+## Evaluation Provider Security & Credential Isolation (experimental v0.1.01 reference)
 
 The evaluation silo introduces support for optional external evaluators (such as TypeSafe Jev) under strict credential isolation:
 
