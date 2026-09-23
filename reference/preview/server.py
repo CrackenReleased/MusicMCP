@@ -150,7 +150,7 @@ class PreviewRequestHandler(http.server.BaseHTTPRequestHandler):
         pass
 
     def _check_security(self) -> bool:
-        """Enforce strict localhost security boundary."""
+        """Enforce strict localhost security boundary, host validation, and origin checks."""
         client_ip = self.client_address[0]
         if client_ip not in ("127.0.0.1", "::1", "localhost"):
             self.send_error_json(
@@ -162,6 +162,64 @@ class PreviewRequestHandler(http.server.BaseHTTPRequestHandler):
                 status=403,
             )
             return False
+
+        # Host header validation: strictly localhost / 127.0.0.1 / ::1
+        host_header = self.headers.get("Host", "")
+        host_name = host_header.split(":")[0].strip("[]")
+        if not host_name or host_name not in ("127.0.0.1", "localhost", "::1"):
+            self.send_error_json(
+                code="SECURITY_VIOLATION",
+                message=f"Access denied: invalid or foreign Host header '{host_header}'.",
+                action="Access the visualizer exclusively using localhost or 127.0.0.1.",
+                operation="security_check",
+                scope="preview",
+                status=403,
+            )
+            return False
+
+        # Origin header validation: reject any non-local cross-origin request
+        origin = self.headers.get("Origin")
+        if origin:
+            parsed_origin = urlparse(origin)
+            origin_host = (parsed_origin.hostname or "").strip("[]")
+            if origin_host not in ("127.0.0.1", "localhost", "::1"):
+                self.send_error_json(
+                    code="SECURITY_VIOLATION",
+                    message=f"Access denied: foreign Origin '{origin}' is forbidden.",
+                    action="Submit requests exclusively from the local visualizer deck.",
+                    operation="security_check",
+                    scope="preview",
+                    status=403,
+                )
+                return False
+
+        # Sec-Fetch-Site validation: cross-site requests are strictly rejected
+        sec_fetch_site = self.headers.get("Sec-Fetch-Site")
+        if sec_fetch_site == "cross-site":
+            self.send_error_json(
+                code="SECURITY_VIOLATION",
+                message="Access denied: cross-site requests are forbidden.",
+                action="Access the visualizer exclusively from the local interface.",
+                operation="security_check",
+                scope="preview",
+                status=403,
+            )
+            return False
+
+        # Content-Type validation on mutating POST requests (prevents simple form CSRF)
+        if self.command == "POST":
+            content_type = self.headers.get("Content-Type", "").split(";")[0].strip()
+            if content_type != "application/json":
+                self.send_error_json(
+                    code="SECURITY_VIOLATION",
+                    message=f"Mutating requests require Content-Type 'application/json', got '{content_type}'.",
+                    action="Submit requests with Content-Type: application/json.",
+                    operation="security_check",
+                    scope="preview",
+                    status=403,
+                )
+                return False
+
         return True
 
     def send_json(self, data: dict, status: int = 200):
@@ -181,6 +239,7 @@ class PreviewRequestHandler(http.server.BaseHTTPRequestHandler):
         operation: str = "preview",
         scope: str = "preview",
         status: int = 400,
+        **state_details,
     ):
         data = {
             "ok": False,
@@ -190,6 +249,7 @@ class PreviewRequestHandler(http.server.BaseHTTPRequestHandler):
                 "action": action,
                 "operation": operation,
                 "scope": scope,
+                **state_details,
             },
         }
         self.send_json(data, status=status)
@@ -206,6 +266,84 @@ class PreviewRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_error_json("INVALID_JSON", f"Failed to parse JSON body: {e}", status=400)
             return None
 
+    def _execute_mutation(self, mutation_fn, success_data_fn):
+        """Serialize the complete mutation, publication, and recovery boundary."""
+        with self.preview._mutation_lock:
+            if self.preview._recovery_required:
+                self.send_error_json("RECOVERY_REQUIRED", "Writes are blocked because disk recovery could not be verified.",
+                                     action="Reopen the project after resolving the storage failure.", status=503,
+                                     state_safe=None, authoritative_state_modified=None, recovery="failed")
+                return
+            self._execute_mutation_locked(mutation_fn, success_data_fn)
+
+    def _execute_mutation_locked(self, mutation_fn, success_data_fn):
+        ws = self.preview.workspace
+        with ws._lock:
+            prev_state = ws._state
+            prev_evidence = dict(ws._evidence)
+            prev_observations = dict(ws._observations)
+            prev_proposals = dict(ws._proposals)
+            # Restore only authority actually held by this host, not other sessions.
+            grants = tuple(ws._grants[session._token] for session in self.preview.sessions)
+
+        def restore_memory():
+            with ws._lock:
+                ws._state = prev_state
+                ws._evidence = prev_evidence
+                ws._observations = prev_observations
+                ws._proposals = prev_proposals
+
+        try:
+            result = mutation_fn()
+        except MusicError as err:
+            restore_memory()
+            status = 409 if "REVISION_CONFLICT" in err.diagnostic.code else 400
+            self.send_error_json(err.diagnostic.code, err.diagnostic.message, err.diagnostic.next_action,
+                                 err.diagnostic.operation, err.diagnostic.scope, status=status)
+            return
+        except Exception as e:
+            restore_memory()
+            self.send_error_json("TRANSACTION_FAILED", f"Mutation failed: {e}", status=400)
+            return
+
+        # Attempt persistence
+        try:
+            self.preview.persist()
+        except Exception as e:
+            restore_memory()
+            recovered = False
+            if self.preview.project_path:
+                try:
+                    from reference.storage.sqlite_store import SqliteStorageEngine
+                    reloaded_ws, reloaded_sessions = SqliteStorageEngine.load_workspace(
+                        self.preview.project_path, grants=grants, policy=ws._policy, validator=ws._validator)
+                    self.preview.workspace = reloaded_ws
+                    self.preview.sessions = reloaded_sessions
+                    recovered = True
+                except Exception:
+                    self.preview._recovery_required = True
+            else:
+                self.preview._recovery_required = True
+
+            self.send_error_json(
+                code="PERSISTENCE_FAILED",
+                message=(f"Persistence failed: {e}. " +
+                         ("Reloaded verified disk state; review it before making another change." if recovered else
+                          "Pre-mutation memory restored, but disk state could not be verified. Further writes are blocked.")),
+                action="Review the recovered project." if recovered else "Resolve the storage failure and reopen the project.",
+                operation="persist",
+                scope="storage",
+                status=500,
+                state_safe=True if recovered else None,
+                authoritative_state_modified=(self.preview.workspace.snapshot() != prev_state) if recovered else None,
+                recovery="reloaded" if recovered else "failed",
+                rollback="memory_restored",
+                transaction="reconciled_from_disk" if recovered else "unknown",
+            )
+            return
+
+        self.send_json(success_data_fn(result))
+
     def find_session_for(self, scope: str, operation: str) -> AuthoritySession | None:
         """Finds a host authority session possessing the required scope and operation."""
         for sess in self.preview.sessions:
@@ -216,7 +354,8 @@ class PreviewRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         try:
-            self._handle_GET()
+            with self.preview._mutation_lock:
+                self._handle_GET()
         except Exception as e:
             traceback.print_exc()
             self.send_error_json("INTERNAL_ERROR", f"Internal server error: {e}", status=500)
@@ -322,7 +461,9 @@ class PreviewRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            self._handle_POST()
+            # Acquire before resolving a workspace/session into a mutation closure.
+            with self.preview._mutation_lock:
+                self._handle_POST()
         except Exception as e:
             traceback.print_exc()
             self.send_error_json("INTERNAL_ERROR", f"Internal server error: {e}", status=500)
@@ -364,13 +505,10 @@ class PreviewRequestHandler(http.server.BaseHTTPRequestHandler):
                 )
                 return
 
-            try:
-                rev = session.confirm(prop_id, exp_rev, reason)
-                self.send_json({"ok": True, "revision": serialize_music_obj(rev)})
-            except MusicError as err:
-                status = 409 if "REVISION_CONFLICT" in err.diagnostic.code else 400
-                self.send_error_json(err.diagnostic.code, err.diagnostic.message, err.diagnostic.next_action,
-                                     err.diagnostic.operation, err.diagnostic.scope, status=status)
+            self._execute_mutation(
+                lambda: session.confirm(prop_id, exp_rev, reason),
+                lambda rev: {"ok": True, "revision": serialize_music_obj(rev)}
+            )
             return
 
         if path == "/api/correct":
@@ -415,13 +553,10 @@ class PreviewRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.send_error_json("VALIDATION_FAILED", f"Failed to parse notes: {e}")
                 return
 
-            try:
-                rev = session.correct(prop_id, corrected_phrase, exp_rev, reason)
-                self.send_json({"ok": True, "revision": serialize_music_obj(rev)})
-            except MusicError as err:
-                status = 409 if "REVISION_CONFLICT" in err.diagnostic.code else 400
-                self.send_error_json(err.diagnostic.code, err.diagnostic.message, err.diagnostic.next_action,
-                                     err.diagnostic.operation, err.diagnostic.scope, status=status)
+            self._execute_mutation(
+                lambda: session.correct(prop_id, corrected_phrase, exp_rev, reason),
+                lambda rev: {"ok": True, "revision": serialize_music_obj(rev)}
+            )
             return
 
         if path == "/api/restore":
@@ -451,13 +586,10 @@ class PreviewRequestHandler(http.server.BaseHTTPRequestHandler):
                 )
                 return
 
-            try:
-                rev = session.restore(rev_num, exp_rev, reason)
-                self.send_json({"ok": True, "revision": serialize_music_obj(rev)})
-            except MusicError as err:
-                status = 409 if "REVISION_CONFLICT" in err.diagnostic.code else 400
-                self.send_error_json(err.diagnostic.code, err.diagnostic.message, err.diagnostic.next_action,
-                                     err.diagnostic.operation, err.diagnostic.scope, status=status)
+            self._execute_mutation(
+                lambda: session.restore(rev_num, exp_rev, reason),
+                lambda rev: {"ok": True, "revision": serialize_music_obj(rev)}
+            )
             return
 
         if path == "/api/propose_alternative":
@@ -488,23 +620,60 @@ class PreviewRequestHandler(http.server.BaseHTTPRequestHandler):
             )
             alt = AlternativeGenerator.generate(req, source_phrase.notes)
 
-            # Ensure observation exists for evidence
-            obs = self.preview.workspace.observe(
-                source_phrase.evidence_id,
-                f"Generated alternative {alt_type.value} from scope '{source_scope}'",
-                producer=PREVIEW_PRODUCER,
-            )
-            prop = self.preview.workspace.propose(
-                obs.id,
-                scope=target_scope,
-                notes=alt.notes,
-                mode="intended",
-                uncertainty="LOW",
-                origin="generated",
-                producer=PREVIEW_PRODUCER,
-            )
+            def propose_alternative():
+                obs = self.preview.workspace.observe(
+                    source_phrase.evidence_id,
+                    f"Generated alternative {alt_type.value} from scope '{source_scope}'",
+                    producer=PREVIEW_PRODUCER,
+                )
+                return self.preview.workspace.propose(
+                    obs.id,
+                    scope=target_scope,
+                    notes=alt.notes,
+                    mode="intended",
+                    uncertainty="LOW",
+                    origin="generated",
+                    producer=PREVIEW_PRODUCER,
+                )
 
-            self.send_json({"ok": True, "proposal": serialize_music_obj(prop)})
+            self._execute_mutation(
+                propose_alternative,
+                lambda prop: {"ok": True, "proposal": serialize_music_obj(prop)}
+            )
+            return
+
+        if path == "/api/upload":
+            wav_base64 = body.get("wav_base64")
+            scope = body.get("scope", "melody")
+            tempo = int(body.get("tempo", 120))
+            if not wav_base64:
+                self.send_error_json("INVALID_INPUT", "Missing 'wav_base64' payload in upload request.", status=400)
+                return
+
+            import base64
+            try:
+                wav_bytes = base64.b64decode(wav_base64)
+            except Exception as e:
+                self.send_error_json("INVALID_BASE64", f"Failed to decode base64 WAV audio: {e}", status=400)
+                return
+
+            def ingest_upload():
+                from reference.analyzer import ingest_and_propose
+                evidence = self.preview.workspace.add_evidence(wav_bytes, "audio/wav")
+                obs, prop = ingest_and_propose(self.preview.workspace, evidence.id, scope, tempo_bpm=tempo)
+                report = watch_audio_bytes(wav_bytes)
+                return prop, report, obs.id, evidence.id
+
+            self._execute_mutation(
+                ingest_upload,
+                lambda res: {
+                    "ok": True,
+                    "evidence_id": res[3],
+                    "observation_id": res[2],
+                    "proposal": serialize_music_obj(res[0]),
+                    "report": serialize_music_obj(res[1]),
+                }
+            )
             return
 
         self.send_error_json("ENDPOINT_NOT_FOUND", f"Unknown POST endpoint '{path}'.", status=404)
@@ -528,6 +697,7 @@ class PreviewServer:
         sessions: Sequence[AuthoritySession] | AuthoritySession,
         host: str = "127.0.0.1",
         port: int = 8765,
+        project_path: Path | str | None = None,
     ):
         if host not in ("127.0.0.1", "localhost", "::1"):
             raise ValueError(
@@ -535,11 +705,20 @@ class PreviewServer:
                 "Only localhost loopback interfaces are authorized."
             )
         self.workspace = workspace
+        self._mutation_lock = threading.RLock()
+        self._recovery_required = False
         self.sessions = (sessions,) if isinstance(sessions, AuthoritySession) else tuple(sessions)
         self.host = host
         self.requested_port = port
+        self.project_path = Path(project_path) if project_path else None
         self.server: ThreadedPreviewServer | None = None
         self.thread: threading.Thread | None = None
+
+    def persist(self):
+        """Persists workspace mutations to SQLite storage if project_path is defined."""
+        if self.project_path:
+            from reference.storage.sqlite_store import SqliteStorageEngine
+            SqliteStorageEngine.save_workspace(self.workspace, self.project_path)
 
     @property
     def port(self) -> int:
@@ -577,3 +756,26 @@ class PreviewServer:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
+
+if __name__ == "__main__":
+    import sys
+    from reference.core import Grant, create_workspace
+    project_arg = sys.argv[1] if len(sys.argv) > 1 else None
+    port = int(sys.argv[2]) if len(sys.argv) > 2 else 8765
+    if project_arg and Path(project_arg).exists():
+        from reference.storage.sqlite_store import SqliteStorageEngine
+        ws, sessions = SqliteStorageEngine.load_workspace(Path(project_arg))
+        print(f"Loaded project: {project_arg}")
+        server = PreviewServer(ws, sessions, port=port, project_path=Path(project_arg))
+    else:
+        ws, (sess,) = create_workspace([Grant("composer-joel", {"melody", "harmony", "bass"}, {"confirm", "correct", "restore"})])
+        sessions = (sess,)
+        print("Created in-memory session for composer-joel")
+        server = PreviewServer(ws, sessions, port=port)
+    print(f"=== Music MCP Visualizer Deck serving at http://127.0.0.1:{port} ===")
+    print("Press Ctrl+C to stop.")
+    try:
+        server.start(background=False)
+    except KeyboardInterrupt:
+        print("\nShutting down preview server...")
+        server.stop()

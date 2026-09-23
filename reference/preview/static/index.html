@@ -26,11 +26,7 @@
       --purple: #a855f7;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       background-color: var(--bg-base);
@@ -45,16 +41,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
       padding-bottom: 1.25rem;
       border-bottom: 1px solid var(--border-subtle);
       margin-bottom: 1.5rem;
     }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
+    .brand { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
 
     .brand-logo {
       width: 2.25rem;
@@ -70,22 +64,9 @@
       box-shadow: 0 0 16px var(--cyan-glow);
     }
 
-    .brand-title {
-      font-size: 1.35rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    .brand-subtitle {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-    }
-
-    .header-status {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
+    .brand-title { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+    .brand-subtitle { font-size: 0.8rem; color: var(--text-secondary); }
+    .header-status { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; }
 
     .badge {
       display: inline-flex;
@@ -104,17 +85,18 @@
     .badge-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
     .badge-rose { background: rgba(244, 63, 94, 0.15); color: var(--rose); border: 1px solid rgba(244, 63, 94, 0.3); }
     .badge-indigo { background: rgba(99, 102, 241, 0.15); color: var(--indigo); border: 1px solid rgba(99, 102, 241, 0.3); }
+    .badge-purple { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.3); }
 
     .grid-container {
       display: grid;
-      grid-template-columns: 340px 1fr 380px;
+      grid-template-columns: 320px minmax(0, 1fr) 380px;
       gap: 1.5rem;
     }
 
+    .grid-container > section { min-width: 0; }
+
     @media (max-width: 1200px) {
-      .grid-container {
-        grid-template-columns: 1fr;
-      }
+      .grid-container { grid-template-columns: minmax(0, 1fr); }
     }
 
     .card {
@@ -126,12 +108,15 @@
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      min-width: 0;
     }
 
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       padding-bottom: 0.75rem;
     }
@@ -149,8 +134,8 @@
     .spectrum-band {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
-      margin-bottom: 0.6rem;
+      gap: 0.2rem;
+      margin-bottom: 0.45rem;
     }
 
     .spectrum-band-meta {
@@ -161,12 +146,11 @@
     }
 
     .progress-track {
-      width: 100%;
-      height: 7px;
-      background: #1f2937;
+      background: rgba(255, 255, 255, 0.05);
       border-radius: 9999px;
+      height: 6px;
       overflow: hidden;
-      position: relative;
+      width: 100%;
     }
 
     .progress-fill {
@@ -175,29 +159,42 @@
       transition: width 0.3s ease;
     }
 
-    .anomaly-box {
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px dashed var(--border-subtle);
-      border-radius: 0.5rem;
-      padding: 0.75rem;
-      font-size: 0.8rem;
-    }
-
-    /* Phrases and Notes */
-    .scope-box {
-      background: var(--bg-surface-elevated);
+    /* Musical Staff Canvas */
+    .staff-canvas-wrapper {
+      position: relative;
+      width: 100%;
+      background: #0a0f1d;
       border: 1px solid var(--border-subtle);
       border-radius: 0.5rem;
-      padding: 0.85rem;
-      margin-bottom: 1rem;
+      overflow-x: auto;
+      margin-top: 0.5rem;
+    }
+
+    .staff-canvas {
+      display: block;
+      height: 130px;
+    }
+
+    /* Scope phrases */
+    .scope-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
     }
 
     .scope-title-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
       margin-bottom: 0.5rem;
     }
+
+    .proposal-title-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+    .proposal-title-bar > div { flex-wrap: wrap; }
 
     .note-roll {
       display: flex;
@@ -216,17 +213,17 @@
       align-items: center;
       gap: 0.35rem;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      transition: all 0.15s ease;
     }
 
-    .note-pitch {
-      font-weight: 700;
-      color: var(--cyan);
+    .note-pill.active-playing {
+      background: rgba(6, 182, 212, 0.25);
+      border-color: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan-glow);
     }
 
-    .note-dur {
-      color: var(--text-muted);
-      font-size: 0.7rem;
-    }
+    .note-pitch { font-weight: 700; color: var(--cyan); }
+    .note-dur { color: var(--text-muted); font-size: 0.7rem; }
 
     /* Proposal Review Deck */
     .proposal-card {
@@ -238,11 +235,26 @@
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
 
-    .proposal-card.active {
+    .proposal-card:hover { border-color: rgba(6, 182, 212, 0.4); }
+    .proposal-card.active { border-color: var(--cyan); box-shadow: 0 0 12px var(--cyan-glow); }
+
+    .upload-zone {
+      border: 2px dashed var(--border-subtle);
+      border-radius: 0.5rem;
+      padding: 1.25rem 1rem;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.4);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
       border-color: var(--cyan);
-      box-shadow: 0 0 12px var(--cyan-glow);
+      background: rgba(6, 182, 212, 0.08);
     }
 
     .btn {
@@ -259,23 +271,20 @@
       transition: all 0.15s ease;
     }
 
-    .btn-emerald {
-      background: var(--emerald);
-      color: #064e3b;
-    }
+    .btn-emerald { background: var(--emerald); color: #064e3b; }
     .btn-emerald:hover { background: #34d399; }
-
-    .btn-cyan {
-      background: var(--cyan);
-      color: #083344;
-    }
+    .btn-cyan { background: var(--cyan); color: #083344; }
     .btn-cyan:hover { background: #38bdf8; }
-
-    .btn-subtle {
-      background: #374151;
-      color: #e5e7eb;
-    }
+    .btn-subtle { background: #374151; color: #e5e7eb; }
     .btn-subtle:hover { background: #4b5563; }
+    .btn-playback {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--emerald);
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+    }
+    .btn-playback:hover { background: rgba(16, 185, 129, 0.3); }
 
     input, select, textarea {
       background: #0f172a;
@@ -298,20 +307,14 @@
       bottom: 1.5rem;
       right: 1.5rem;
       padding: 0.75rem 1.25rem;
-      border-radius: 0.5rem;
       background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
-      color: var(--text-primary);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       font-size: 0.85rem;
+      font-weight: 500;
       display: none;
       z-index: 100;
-      animation: fadeIn 0.2s ease-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -321,104 +324,131 @@
     <div class="brand">
       <div class="brand-logo">&#9835;</div>
       <div>
-        <h1 class="brand-title">Music MCP Visualizer</h1>
-        <p class="brand-subtitle">Host-Held Authority Review Deck · Python 3.11+ Reference Silo</p>
+        <h1 class="brand-title">Music MCP Visualizer & Review Deck</h1>
+        <div class="brand-subtitle">Host-Held Human Authority · 10 Hz - 28 kHz Spectrum Watcher · Engraved Visual Notation</div>
       </div>
     </div>
     <div class="header-status">
-      <span id="rev-badge" class="badge badge-cyan">Revision 0</span>
-      <span id="lock-badge" class="badge badge-indigo">0 Locks</span>
-      <button class="btn btn-subtle" onclick="refreshAll()">&#x21bb; Refresh</button>
+      <span class="badge badge-cyan" id="rev-badge">Revision 0</span>
+      <span class="badge badge-emerald" id="lock-badge">0 Locks</span>
+      <button class="btn btn-subtle" onclick="refreshAll()" title="Refresh state from host">&#8635; Refresh</button>
     </div>
   </header>
 
   <main class="grid-container">
-    
-    <!-- LEFT PANEL: 10-Band Spectrum & Acoustic Anomaly Watcher -->
-    <section class="card">
-      <div class="card-header">
-        <h2 class="card-title">&#128266; Spectrum Inspector</h2>
-        <span class="badge badge-cyan">10 Hz – 28+ kHz</span>
+
+    <!-- LEFT COLUMN: Acoustic Spectrum & Audio Ingestion -->
+    <section style="display: flex; flex-direction: column; gap: 1rem;">
+
+      <!-- Real Audio File Ingestion Drop Zone -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">&#127911; Acoustic Audio Ingestion</h2>
+          <span class="badge badge-cyan">WAV PCM</span>
+        </div>
+        <div class="upload-zone" id="audio-drop-zone" onclick="document.getElementById('audio-file-input').click()">
+          <input type="file" id="audio-file-input" accept=".wav" style="display: none;" onchange="if(this.files[0]) handleAudioUpload(this.files[0])" />
+          <div style="font-size: 1.8rem; margin-bottom: 0.2rem;">&#127925;</div>
+          <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">Drop Acoustic WAV file here</div>
+          <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.2rem;">or click to browse local recordings</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.75rem;">
+          <div>
+            <label style="color: var(--text-muted); font-size: 0.7rem;">Target Scope:</label>
+            <input type="text" id="upload-scope" value="melody" style="margin-top: 0.2rem;" />
+          </div>
+          <div>
+            <label style="color: var(--text-muted); font-size: 0.7rem;">Tempo (BPM):</label>
+            <input type="number" id="upload-tempo" value="120" style="margin-top: 0.2rem;" />
+          </div>
+        </div>
       </div>
 
-      <div style="font-size: 0.75rem; color: var(--text-secondary);">
-        Real-time acoustic energy decomposition & non-musical anomaly protection.
+      <!-- 10-Band Acoustic Spectrum Inspector -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">&#128266; 10-Band Spectrum</h2>
+          <span class="badge badge-cyan" id="spectrum-status-badge">10 Hz - 28 kHz</span>
+        </div>
+        <div id="spectrum-bars-container">
+          <div style="color: var(--text-muted); font-size: 0.8rem;">Select a proposal or drop audio to inspect.</div>
+        </div>
       </div>
 
-      <div id="spectrum-bars-container">
-        <!-- Dynamic Spectrum Bands -->
+      <!-- Acoustic Resonance & Harmonics -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">&#127926; Natural Resonance</h2>
+          <span class="badge badge-emerald" id="resonance-status-badge">Acoustic Check</span>
+        </div>
+        <div id="resonance-box" style="font-size: 0.8rem; color: var(--text-secondary);">
+          Acoustic sympathetic resonance and room modes will appear here.
+        </div>
       </div>
 
-      <div class="card-header" style="margin-top: 0.5rem;">
-        <h3 class="card-title" style="font-size: 0.85rem;">Anomaly Watcher</h3>
-        <span id="anomaly-status-badge" class="badge badge-emerald">CLEAN</span>
-      </div>
-      <div id="anomalies-list" class="anomaly-box">
-        No non-musical anomalies detected in active audio evidence.
+      <!-- Anomaly Alert Watcher -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">&#9888; Non-Musical Alerts</h2>
+          <span class="badge badge-emerald" id="anomaly-status-badge">Clean Signal</span>
+        </div>
+        <div id="anomalies-list" style="font-size: 0.8rem; color: var(--text-secondary);">
+          Zero non-musical acoustic anomalies detected.
+        </div>
       </div>
 
-      <div class="card-header" style="margin-top: 0.5rem;">
-        <h3 class="card-title" style="font-size: 0.85rem;">Acoustic Resonance & Harmonics</h3>
-        <span id="resonance-status-badge" class="badge badge-indigo">NATURAL</span>
-      </div>
-      <div id="resonance-box" class="anomaly-box">
-        No active acoustic resonance data.
-      </div>
     </section>
 
-    <!-- MIDDLE PANEL: Authoritative Score & Phrasing -->
+    <!-- CENTER COLUMN: Authoritative Published Score with Musical Staff -->
     <section class="card">
       <div class="card-header">
-        <h2 class="card-title">&#127926; Authoritative State</h2>
-        <span class="badge badge-emerald">Published Revisions</span>
+        <h2 class="card-title">&#128214; Authoritative Musical State (AMS)</h2>
+        <span class="badge badge-emerald" id="ams-count-badge">Active Phrases</span>
       </div>
 
       <div id="phrases-container">
         <div style="color: var(--text-muted); font-size: 0.85rem;">Loading authoritative phrases...</div>
       </div>
 
-      <!-- Revision History List -->
-      <div class="card-header" style="margin-top: 1rem;">
-        <h3 class="card-title" style="font-size: 0.85rem;">Revision Provenance DAG</h3>
-      </div>
-      <div id="history-container" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 200px; overflow-y: auto;">
-        <!-- History items -->
+      <!-- Historical Revision Log -->
+      <div style="border-top: 1px solid var(--border-subtle); padding-top: 0.75rem;">
+        <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Revision History</h3>
+        <div id="history-container" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 180px; overflow-y: auto;">
+          <div style="color: var(--text-muted); font-size: 0.75rem;">No historical revisions.</div>
+        </div>
       </div>
     </section>
 
-    <!-- RIGHT PANEL: Human Authority Review Deck -->
+    <!-- RIGHT COLUMN: Human Authority Review Deck -->
     <section class="card">
       <div class="card-header">
-        <h2 class="card-title">&#9878;&#65039; Authority Review Deck</h2>
-        <span class="badge badge-amber">Human Review</span>
+        <h2 class="card-title">&#9997; Proposal Review Deck</h2>
+        <span class="badge badge-amber" id="prop-count-badge">Uncommitted</span>
       </div>
 
-      <div style="font-size: 0.75rem; color: var(--text-secondary);">
-        Review candidate proposals, audit machine uncertainty, or execute authorized corrections.
-      </div>
-
-      <!-- Uncommitted Proposals List -->
-      <div id="proposals-container">
-        <div style="color: var(--text-muted); font-size: 0.85rem;">Scanning uncommitted proposals...</div>
+      <!-- Uncommitted Proposals List with Engraved Canvas -->
+      <div id="proposals-container" style="max-height: 380px; overflow-y: auto;">
+        <div style="color: var(--text-muted); font-size: 0.85rem;">Loading proposals and review history...</div>
       </div>
 
       <!-- Human Action Forms -->
       <div style="border-top: 1px solid var(--border-subtle); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem;">
-        <h3 style="font-size: 0.82rem; color: var(--text-primary);">Human Correction & Mutation</h3>
+        <h3 style="font-size: 0.82rem; color: var(--text-primary); font-weight: 700;">Human Authority Mutation</h3>
         
         <input type="text" id="correct-proposal-id" placeholder="Target Proposal ID" />
-        <input type="text" id="correct-notes-input" placeholder="Notes (e.g. C4 1, E4 1/2, G4 1/2)" />
+        <div id="correction-source" role="status" style="font-size: 0.78rem; color: var(--text-secondary);">Select a proposal to edit.</div>
+        <input type="text" id="correct-notes-input" aria-describedby="correction-source" placeholder="Notes (e.g. C4 1, E4 1/2, G4 1/2)" />
         <input type="text" id="action-reason-input" placeholder="Attributable Reason for Modification" />
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-          <button class="btn btn-emerald" onclick="handleConfirm()">Confirm Proposal</button>
-          <button class="btn btn-cyan" onclick="handleCorrect()">Submit Correction</button>
+          <button class="btn btn-emerald" onclick="handleConfirm()">&#10003; Confirm Proposal</button>
+          <button class="btn btn-cyan" onclick="handleCorrect()">&#9998; Submit Correction</button>
         </div>
       </div>
 
       <!-- Request Generated Alternative -->
       <div style="border-top: 1px solid var(--border-subtle); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem;">
-        <h3 style="font-size: 0.82rem; color: var(--text-primary);">Request Generated Alternative</h3>
+        <h3 style="font-size: 0.82rem; color: var(--text-primary); font-weight: 700;">Request Generated Alternative</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
           <input type="text" id="alt-source-scope" placeholder="Source Scope" value="melody" />
           <input type="text" id="alt-target-scope" placeholder="Target Scope" value="harmony" />
@@ -441,6 +471,32 @@
   <script>
     let currentRevision = 0;
     let cachedProposals = [];
+    let cachedPhrases = [];
+    let reviewedProposalIds = new Set();
+    let audioCtx = null;
+    let currentSelectedProposalId = null;
+    let isDraftDirty = false;
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    let activePlaybackTimeout = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
 
     function showToast(msg, isError = false) {
       const t = document.getElementById('toast');
@@ -451,6 +507,299 @@
       setTimeout(() => { t.style.display = 'none'; }, 3500);
     }
 
+    // --- Musical Staff Engraving on HTML5 Canvas ---
+    const PITCH_DIATONIC = { 'C': 0, 'D': 1, 'E': 2, 'F': 3, 'G': 4, 'A': 5, 'B': 6 };
+
+    function getPitchStaffOffset(pitch) {
+      if (!pitch || pitch === 'rest') return null;
+      const letter = pitch[0].toUpperCase();
+      const accidental = pitch.includes('#') ? '#' : (pitch.includes('b') ? 'b' : '');
+      const octaveMatch = pitch.match(/\d+/);
+      const octave = octaveMatch ? parseInt(octaveMatch[0]) : 4;
+
+      const diatonicStep = PITCH_DIATONIC[letter] || 0;
+      // Treble Clef: E4 is bottom line (index 0). Middle C (C4) is index -2.
+      // Offset from E4 in diatonic steps:
+      const totalStep = (octave - 4) * 7 + (diatonicStep - 2); // C4 is -2, E4 is 0, G4 is 2, C5 is 5
+      return { step: totalStep, accidental };
+    }
+
+    function drawStaff(canvas, notes) {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      // Expand around the pitch range so ledger lines, noteheads, stems and labels fit.
+      const lineSpacing = 14;
+      const stepPixels = lineSpacing / 2;
+      const pitchSteps = notes.map(n => getPitchStaffOffset(n.pitch)).filter(Boolean).map(p => p.step);
+      const highestStep = pitchSteps.length ? Math.max(...pitchSteps) : 0;
+      const lowestStep = pitchSteps.length ? Math.min(...pitchSteps) : 0;
+      const topStaffY = Math.max(42, 38 + highestStep * stepPixels - 4 * lineSpacing);
+      const bottomStaffY = topStaffY + 4 * lineSpacing;
+      const height = Math.max(130, Math.ceil(bottomStaffY - lowestStep * stepPixels + 38));
+      canvas.height = height;
+      canvas.style.height = `${height}px`;
+      ctx.clearRect(0, 0, width, height);
+
+      // 1. Draw 5 staff lines
+      ctx.strokeStyle = '#4b5563';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 5; i++) {
+        const y = topStaffY + i * lineSpacing;
+        ctx.beginPath();
+        ctx.moveTo(10, y);
+        ctx.lineTo(width - 10, y);
+        ctx.stroke();
+      }
+
+      // 2. Draw Treble Clef
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '52px serif';
+      ctx.fillText('𝄞', 18, 98);
+
+      // 3. Draw notes
+      let cursorX = 85;
+
+      let currentMeasureBeats = 0;
+
+      notes.forEach((n, idx) => {
+        const durationUnits = parseFloat(n.duration_float || 1.0);
+        const pitchInfo = getPitchStaffOffset(n.pitch);
+
+        if (!pitchInfo) {
+          // REST Note
+          ctx.fillStyle = '#6b7280';
+          ctx.font = '24px serif';
+          ctx.fillText('𝄽', cursorX, 76);
+        } else {
+          // PITCH Note
+          // E4 is on bottom line (bottomStaffY).
+          // Higher notes go UP in y (-= step * stepPixels).
+          const noteY = bottomStaffY - (pitchInfo.step * stepPixels);
+
+          // Draw Ledger lines if below or above staff
+          ctx.strokeStyle = '#9ca3af';
+          ctx.lineWidth = 1.5;
+          if (pitchInfo.step <= -2) { // C4 or below
+            for (let l = -2; l >= pitchInfo.step; l -= 2) {
+              const ly = bottomStaffY - (l * stepPixels);
+              ctx.beginPath();
+              ctx.moveTo(cursorX - 8, ly);
+              ctx.lineTo(cursorX + 16, ly);
+              ctx.stroke();
+            }
+          } else if (pitchInfo.step >= 10) { // A5 or above
+            for (let l = 10; l <= pitchInfo.step; l += 2) {
+              const ly = bottomStaffY - (l * stepPixels);
+              ctx.beginPath();
+              ctx.moveTo(cursorX - 8, ly);
+              ctx.lineTo(cursorX + 16, ly);
+              ctx.stroke();
+            }
+          }
+
+          // Draw Accidental
+          if (pitchInfo.accidental) {
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText(pitchInfo.accidental === '#' ? '♯' : '♭', cursorX - 11, noteY + 5);
+          }
+
+          // Draw Note Head
+          const isHollow = durationUnits >= 2.0; // Half or Whole note
+          ctx.save();
+          ctx.translate(cursorX + 4, noteY);
+          ctx.rotate(-0.25);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 6.5, 4.5, 0, 0, Math.PI * 2);
+          if (isHollow) {
+            ctx.strokeStyle = '#f9fafb';
+            ctx.lineWidth = 2.0;
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = '#f9fafb';
+            ctx.fill();
+          }
+          ctx.restore();
+
+          // Draw Stem if not a whole note (duration < 4.0)
+          if (durationUnits < 4.0) {
+            const stemUp = pitchInfo.step < 4; // Below middle B4 stems go UP, at or above go DOWN
+            ctx.strokeStyle = '#f9fafb';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            if (stemUp) {
+              ctx.moveTo(cursorX + 10, noteY - 1);
+              ctx.lineTo(cursorX + 10, noteY - 32);
+            } else {
+              ctx.moveTo(cursorX - 2, noteY + 1);
+              ctx.lineTo(cursorX - 2, noteY + 32);
+            }
+            ctx.stroke();
+          }
+
+          // Pitch Label below/above
+          ctx.fillStyle = '#06b6d4';
+          ctx.font = '10px ui-monospace, monospace';
+          ctx.fillText(n.pitch, cursorX - 4, Math.max(bottomStaffY + 24, noteY + 18));
+        }
+
+        cursorX += Math.max(45, durationUnits * 40);
+        currentMeasureBeats += durationUnits;
+
+        // Draw Measure Barline every 4 quarter-note units
+        if (currentMeasureBeats >= 4.0 && idx < notes.length - 1) {
+          ctx.strokeStyle = '#4b5563';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(cursorX - 15, topStaffY);
+          ctx.lineTo(cursorX - 15, bottomStaffY);
+          ctx.stroke();
+          currentMeasureBeats = currentMeasureBeats % 4.0;
+        }
+      });
+    }
+
+    // --- Web Audio Playback Synthesizer ---
+    function pitchToFrequency(pitch) {
+      if (!pitch || pitch === 'rest') return 0;
+      const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      let p = pitch.toUpperCase().trim();
+      let accidental = 0;
+      let letter = p[0];
+      let rest = p.slice(1);
+
+      if (rest.startsWith('#')) { accidental = 1; rest = rest.slice(1); }
+      else if (rest.startsWith('B')) { accidental = -1; rest = rest.slice(1); }
+
+      let octave = parseInt(rest) || 4;
+      let noteIndex = noteNames.indexOf(letter);
+      if (noteIndex === -1) return 0;
+
+      let midi = (octave + 1) * 12 + noteIndex + accidental;
+      return 440.0 * Math.pow(2.0, (midi - 69) / 12.0);
+    }
+
+    function playPhraseAudio(notes, tempo = 120, containerId = null) {
+      const ctx = getAudioContext();
+      if (!notes || notes.length === 0) return;
+
+      if (activePlaybackTimeout) {
+        clearTimeout(activePlaybackTimeout);
+      }
+
+      const quarterSec = 60.0 / tempo;
+      let startTime = ctx.currentTime + 0.05;
+
+      notes.forEach((n, idx) => {
+        const durUnits = parseFloat(n.duration_float || 1.0);
+        const durSec = durUnits * quarterSec;
+        const freq = pitchToFrequency(n.pitch);
+
+        if (freq > 0) {
+          // Acoustic Tone synthesis: Fundamental + soft 2nd harmonic with warm envelope
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(freq, startTime);
+
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(freq * 2.0, startTime);
+
+          // Warm envelope: soft attack, exponential decay
+          gain.gain.setValueAtTime(0.0001, startTime);
+          gain.gain.linearRampToValueAtTime(0.25, startTime + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, startTime + durSec - 0.01);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc1.start(startTime);
+          osc2.start(startTime);
+          osc1.stop(startTime + durSec);
+          osc2.stop(startTime + durSec);
+        }
+
+        // Visual highlighting
+        const delayMs = Math.max(0, (startTime - ctx.currentTime) * 1000);
+        setTimeout(() => {
+          if (containerId) {
+            const pills = document.querySelectorAll(`#${containerId} .note-pill`);
+            pills.forEach((p, pIdx) => p.classList.toggle('active-playing', pIdx === idx));
+          }
+        }, delayMs);
+
+        startTime += durSec;
+      });
+
+      // Clear highlights at end
+      const totalMs = Math.max(0, (startTime - ctx.currentTime) * 1000);
+      activePlaybackTimeout = setTimeout(() => {
+        if (containerId) {
+          const pills = document.querySelectorAll(`#${containerId} .note-pill`);
+          pills.forEach(p => p.classList.remove('active-playing'));
+        }
+      }, totalMs);
+    }
+
+    // --- Audio File Upload ---
+    async function handleAudioUpload(file) {
+      if (!file) return;
+      const scope = document.getElementById('upload-scope').value || 'melody';
+      const tempo = parseInt(document.getElementById('upload-tempo').value || 120);
+
+      showToast(`Uploading and analyzing ${file.name}...`);
+      const reader = new FileReader();
+
+      reader.onload = async (e) => {
+        try {
+          const arrayBuf = e.target.result;
+          // Convert array buffer to base64
+          let binary = '';
+          const bytes = new Uint8Array(arrayBuf);
+          for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          const base64 = btoa(binary);
+
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ wav_base64: base64, scope, tempo })
+          });
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error?.message || 'Upload analysis failed');
+
+          showToast(`[OK] Extracted ${data.proposal.notes.length} notes in scope '${scope}'`);
+          if (data.report) renderSpectrum(data.report);
+          refreshAll();
+        } catch (err) {
+          showToast(err.message, true);
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    // --- Drag and Drop Wireup ---
+    const dropZone = document.getElementById('audio-drop-zone');
+    if (dropZone) {
+      ['dragenter', 'dragover'].forEach(name => {
+        dropZone.addEventListener(name, (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+      });
+      ['dragleave', 'drop'].forEach(name => {
+        dropZone.addEventListener(name, (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+      });
+      dropZone.addEventListener('drop', (e) => {
+        const file = e.dataTransfer.files[0];
+        if (file) handleAudioUpload(file);
+      });
+    }
+
+    // --- API Fetch & Render ---
     async function fetchProject() {
       try {
         const res = await fetch('/api/project');
@@ -458,8 +807,11 @@
         if (!data.ok) throw new Error(data.error?.message || 'Failed to fetch project');
         
         currentRevision = data.revision;
+        cachedPhrases = data.phrases || [];
+        reviewedProposalIds = new Set((data.history || []).map(rev => rev.proposal_id));
         document.getElementById('rev-badge').innerText = `Revision ${data.revision}`;
         document.getElementById('lock-badge').innerText = `${data.locks.length} Locks`;
+        document.getElementById('ams-count-badge').innerText = `${data.phrases.length} Phrases`;
 
         renderPhrases(data.phrases);
         renderHistory(data.history);
@@ -471,34 +823,51 @@
     function renderPhrases(phrases) {
       const container = document.getElementById('phrases-container');
       if (!phrases || phrases.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No phrases published yet. Confirm or correct a proposal to begin.</div>';
+        container.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No phrases published yet. Ingest audio or confirm a proposal to begin.</div>';
         return;
       }
 
-      container.innerHTML = phrases.map(p => `
-        <div class="scope-box">
+      container.innerHTML = phrases.map((p, idx) => `
+        <div class="scope-box" id="scope-box-${idx}">
           <div class="scope-title-bar">
             <div>
-              <span style="font-weight: 700; color: var(--text-primary);">${p.scope}</span>
+              <span style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">${escapeHtml(p.scope)}</span>
               <span class="badge ${p.origin === 'human' ? 'badge-emerald' : (p.origin === 'generated' ? 'badge-purple' : 'badge-cyan')}" style="margin-left: 0.4rem;">
-                origin: ${p.origin}
+                origin: ${escapeHtml(p.origin)}
               </span>
             </div>
-            <span style="font-size: 0.72rem; color: var(--text-muted);">Rev ${p.number} · by ${p.actor}</span>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <button class="btn btn-playback" onclick='playPhraseAudio(${JSON.stringify(p.notes)}, 120, "scope-box-${idx}")'>
+                &#9654; Play Staff
+              </button>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">Rev ${escapeHtml(p.number)} · ${escapeHtml(p.actor)}</span>
+            </div>
           </div>
+
+          <!-- Musical Staff Engraving Canvas -->
+          <div class="staff-canvas-wrapper">
+            <canvas id="canvas-phrase-${idx}" class="staff-canvas" width="640" height="130"></canvas>
+          </div>
+
           <div class="note-roll">
             ${p.notes.map(n => `
               <div class="note-pill">
-                <span class="note-pitch">${n.pitch}</span>
-                <span class="note-dur">${n.duration}</span>
+                <span class="note-pitch">${escapeHtml(n.pitch)}</span>
+                <span class="note-dur">${escapeHtml(n.duration)}</span>
               </div>
             `).join('')}
           </div>
           <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem;">
-            Reason: "${p.reason}"
+            Reason: "${escapeHtml(p.reason)}"
           </div>
         </div>
       `).join('');
+
+      // Draw all phrase staves
+      phrases.forEach((p, idx) => {
+        const canvas = document.getElementById(`canvas-phrase-${idx}`);
+        if (canvas) drawStaff(canvas, p.notes);
+      });
     }
 
     function renderHistory(history) {
@@ -511,10 +880,10 @@
       container.innerHTML = history.slice().reverse().map(rev => `
         <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 0.4rem 0.6rem; border-radius: 0.375rem; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <strong>Rev ${rev.number}</strong> [${rev.scope}] <em>${rev.operation}</em> by ${rev.actor}
-            <div style="color: var(--text-muted); font-size: 0.68rem;">${rev.notes.map(n => n.pitch).join(' ')}</div>
+            <strong>Rev ${escapeHtml(rev.number)}</strong> [${escapeHtml(rev.scope)}] <em>${escapeHtml(rev.operation)}</em> by ${escapeHtml(rev.actor)}
+            <div style="color: var(--text-muted); font-size: 0.68rem;">${escapeHtml(rev.notes.map(n => n.pitch).join(' '))}</div>
           </div>
-          <button class="btn btn-subtle" style="padding: 0.2rem 0.5rem; font-size: 0.68rem;" onclick="handleRestore(${rev.number})">Restore</button>
+          <button class="btn btn-subtle" style="padding: 0.2rem 0.5rem; font-size: 0.68rem;" onclick="handleRestore(${escapeHtml(rev.number)})">Restore</button>
         </div>
       `).join('');
     }
@@ -526,49 +895,81 @@
         if (!data.ok) return;
 
         cachedProposals = data.proposals || [];
+        const reviewedCount = cachedProposals.filter(p => reviewedProposalIds.has(p.id)).length;
+        document.getElementById('prop-count-badge').innerText = `${cachedProposals.length - reviewedCount} Pending · ${reviewedCount} Reviewed`;
         const container = document.getElementById('proposals-container');
         if (cachedProposals.length === 0) {
-          container.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No pending proposals in workspace.</div>';
+          container.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No proposals. Drop audio to propose.</div>';
           return;
         }
 
-        container.innerHTML = cachedProposals.map(prop => {
+        container.innerHTML = cachedProposals.map((prop, idx) => {
           const uncColor = prop.uncertainty === 'LOW' ? 'badge-emerald' : (prop.uncertainty === 'MEDIUM' ? 'badge-amber' : 'badge-rose');
-          const origBadge = prop.origin === 'generated' ? 'badge-indigo' : 'badge-cyan';
+          const origBadge = prop.origin === 'generated' ? 'badge-purple' : 'badge-cyan';
+          const safeId = escapeHtml(prop.id);
           return `
-            <div class="proposal-card" onclick="selectProposal('${prop.id}')" id="card-${prop.id}">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 600; font-size: 0.85rem;">Scope: ${prop.scope}</span>
-                <div>
-                  <span class="badge ${origBadge}">origin: ${prop.origin}</span>
-                  <span class="badge ${uncColor}">unc: ${prop.uncertainty}</span>
+            <div class="proposal-card" onclick="selectProposal('${safeId}')" id="card-${safeId}">
+              <div class="proposal-title-bar">
+                <span style="font-weight: 700; font-size: 0.85rem;">Scope: ${escapeHtml(prop.scope)}</span>
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                  <button class="btn btn-playback" style="padding: 0.15rem 0.45rem; font-size: 0.7rem;" onclick='event.stopPropagation(); playPhraseAudio(${JSON.stringify(prop.notes)}, 120, "card-${safeId}")'>
+                    &#9654; Play
+                  </button>
+                  <span class="badge ${origBadge}">origin: ${escapeHtml(prop.origin)}</span>
+                  <span class="badge ${uncColor}">${escapeHtml(prop.uncertainty)}</span>
                 </div>
               </div>
+
+              <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.4rem;">
+                ${reviewedProposalIds.has(prop.id) ? 'Reviewed · original proposal retained' : 'Pending review'}
+              </div>
+
+              <!-- Musical Staff Engraving for Proposal -->
+              <div class="staff-canvas-wrapper">
+                <canvas id="canvas-prop-${idx}" class="staff-canvas" width="600" height="120"></canvas>
+              </div>
+
               <div class="note-roll">
                 ${prop.notes.map(n => `
                   <div class="note-pill">
-                    <span class="note-pitch">${n.pitch}</span>
-                    <span class="note-dur">${n.duration}</span>
+                    <span class="note-pitch">${escapeHtml(n.pitch)}</span>
+                    <span class="note-dur">${escapeHtml(n.duration)}</span>
                   </div>
                 `).join('')}
               </div>
-              <div style="font-size: 0.7rem; color: var(--text-secondary); display: flex; justify-content: space-between;">
-                <span>ID: ${prop.id.slice(0, 8)}...</span>
-                <span>Mode: ${prop.mode}</span>
+              <div style="font-size: 0.7rem; color: var(--text-secondary); display: flex; justify-content: space-between; margin-top: 0.2rem;">
+                <span>ID: ${safeId.slice(0, 8)}...</span>
+                <span>Mode: ${escapeHtml(prop.mode)}</span>
               </div>
             </div>
           `;
         }).join('');
 
-        if (cachedProposals.length > 0) {
-          selectProposal(cachedProposals[0].id);
+        // Draw staves on all proposals
+        cachedProposals.forEach((prop, idx) => {
+          const canvas = document.getElementById(`canvas-prop-${idx}`);
+          if (canvas) drawStaff(canvas, prop.notes);
+        });
+
+        // Preserve active proposal selection and typed drafts across polling cycles
+        let targetId = currentSelectedProposalId;
+        const targetExists = cachedProposals.some(p => p.id === targetId);
+        if (!targetExists) {
+          targetId = cachedProposals.length > 0 ? cachedProposals[0].id : null;
+          isDraftDirty = false;
+        }
+
+        if (targetId) {
+          selectProposal(targetId, true);
         }
       } catch (err) {
         console.error(err);
       }
     }
 
-    function selectProposal(propId) {
+    function selectProposal(propId, fromPoll = false) {
+      const selectionChanged = currentSelectedProposalId !== propId;
+      currentSelectedProposalId = propId;
       document.querySelectorAll('.proposal-card').forEach(c => c.classList.remove('active'));
       const activeCard = document.getElementById(`card-${propId}`);
       if (activeCard) activeCard.classList.add('active');
@@ -576,7 +977,18 @@
       document.getElementById('correct-proposal-id').value = propId;
       const prop = cachedProposals.find(p => p.id === propId);
       if (prop) {
-        document.getElementById('correct-notes-input').value = prop.notes.map(n => `${n.pitch} ${n.duration}`).join(', ');
+        const notesInput = document.getElementById('correct-notes-input');
+        const isEditing = document.activeElement === notesInput;
+        // Never wipe out active user edits during background polling
+        if (selectionChanged || (!isDraftDirty && !isEditing)) {
+          const confirmed = cachedPhrases.find(p => p.scope === prop.scope && p.proposal_id === prop.id);
+          const sourceNotes = confirmed ? confirmed.notes : prop.notes;
+          notesInput.value = sourceNotes.map(n => `${n.pitch} ${n.duration}`).join(', ');
+          document.getElementById('correction-source').textContent = confirmed
+            ? `Editing confirmed revision ${confirmed.number}. Submit Correction saves these notes; Confirm Proposal publishes the original proposal.`
+            : 'Editing original proposal. Submit Correction saves edited notes; Confirm Proposal publishes the original proposal.';
+          isDraftDirty = false;
+        }
         if (prop.evidence_id) {
           fetchSpectrum(prop.evidence_id);
         }
@@ -589,8 +1001,7 @@
         const data = await res.json();
         if (!data.ok || !data.report) return;
 
-        const report = data.report;
-        renderSpectrum(report);
+        renderSpectrum(data.report);
       } catch (err) {
         console.error(err);
       }
@@ -625,7 +1036,7 @@
       };
 
       container.innerHTML = Object.entries(report.band_energies).map(([band, energy]) => {
-        const pct = Math.min(100, Math.round(energy * 100 * 3)); // visual amplification for small bands
+        const pct = Math.min(100, Math.round(energy * 100 * 3));
         const color = bandColors[band] || '#38bdf8';
         const label = friendlyNames[band] || band;
         return `
@@ -641,10 +1052,9 @@
         `;
       }).join('');
 
-      // Render anomalies
+      // Anomalies
       const anomalyBadge = document.getElementById('anomaly-status-badge');
       const anomalyBox = document.getElementById('anomalies-list');
-
       if (report.anomalies && report.anomalies.length > 0) {
         anomalyBadge.className = 'badge badge-rose';
         anomalyBadge.innerText = `${report.anomalies.length} ALERTS`;
@@ -659,7 +1069,7 @@
         anomalyBox.innerHTML = 'Zero non-musical acoustic anomalies detected. Signal strictly within musical bounds.';
       }
 
-      // Render Acoustic Resonance
+      // Acoustic Resonance
       const resBadge = document.getElementById('resonance-status-badge');
       const resBox = document.getElementById('resonance-box');
       if (resBox && report.resonance && report.resonance.fundamental_hz) {
@@ -722,7 +1132,11 @@
         if (!data.ok) throw new Error(data.error?.message || 'Correction failed');
 
         showToast(`[OK] Published Corrected Revision ${data.revision.number} in scope '${data.revision.scope}'`);
-        refreshAll();
+        // A response must not erase edits made while the save was in flight.
+        if (currentSelectedProposalId === propId && document.getElementById('correct-notes-input').value === notes) {
+          isDraftDirty = false;
+        }
+        await refreshAll();
       } catch (err) {
         showToast(err.message, true);
       }
@@ -770,14 +1184,25 @@
       }
     }
 
-    function refreshAll() {
-      fetchProject();
-      fetchProposals();
+    async function refreshAll() {
+      // Resolve confirmed state before choosing the correction editor's source.
+      await fetchProject();
+      await fetchProposals();
     }
+
+    // Track draft dirty state on user keystrokes
+    window.addEventListener('DOMContentLoaded', () => {
+      const notesInput = document.getElementById('correct-notes-input');
+      if (notesInput) {
+        notesInput.addEventListener('input', () => {
+          isDraftDirty = true;
+        });
+      }
+    });
 
     // Initial load
     refreshAll();
-    setInterval(refreshAll, 5000); // Polling update every 5 seconds
+    setInterval(refreshAll, 5000);
   </script>
 </body>
 </html>

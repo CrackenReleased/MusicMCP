@@ -73,7 +73,7 @@ def cmd_init(args: argparse.Namespace) -> int:
                         for s in args.lock.split(",")) if args.lock else ()
 
     ws, _ = create_workspace(grants=grants, constraints=constraints)
-    report = SqliteStorageEngine.save_workspace(ws, path)
+    report = SqliteStorageEngine.save_workspace(ws, path, force=args.force)
     print(f"[OK] Initialized new Music MCP project: {path}")
     print(f"     Artist: {artist} | Scopes: {sorted(default_scopes)}")
     if constraints:
@@ -379,6 +379,31 @@ def cmd_restore(args: argparse.Namespace) -> int:
     return 0
 
 
+
+
+def cmd_serve(args: argparse.Namespace) -> int:
+    path = Path(args.project)
+    if not path.exists():
+        print(f"Error: Project file not found at {path}", file=sys.stderr)
+        return 1
+    from reference.preview.server import PreviewServer
+    ws, sessions = SqliteStorageEngine.load_workspace(path)
+    server = PreviewServer(ws, sessions, port=args.port, project_path=path)
+    print(f"=== Music MCP Visualizer Preview Server ===")
+    print(f"  Project:  {path}")
+    print(f"  URL:      http://127.0.0.1:{args.port}")
+    print(f"  Bound to: Loopback (127.0.0.1) ONLY")
+    print(f"  Press Ctrl+C to terminate server.")
+    if args.open:
+        import webbrowser
+        webbrowser.open(f"http://127.0.0.1:{args.port}")
+    try:
+        server.start(background=False)
+    except KeyboardInterrupt:
+        print("\nStopping preview server...")
+        server.stop()
+    return 0
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="musicmcp",
@@ -445,6 +470,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_rest.add_argument("--revision", type=int, required=True, help="Revision number to restore")
     p_rest.add_argument("--reason", help="Reason for restoration")
 
+    # serve
+    p_srv = subparsers.add_parser("serve", help="Launch the local visualizer and authority review deck in browser")
+    p_srv.add_argument("project", help="Path to .musicmcp project file")
+    p_srv.add_argument("--port", type=int, default=8765, help="Port to bind (default: 8765)")
+    p_srv.add_argument("--open", action="store_true", help="Automatically open browser")
+
     return parser
 
 
@@ -466,6 +497,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "import": cmd_import,
         "history": cmd_history,
         "restore": cmd_restore,
+        "serve": cmd_serve,
     }
 
     handler = dispatch.get(args.subcommand)
