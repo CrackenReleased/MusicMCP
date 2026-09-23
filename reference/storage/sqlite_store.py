@@ -10,8 +10,10 @@ import json
 from pathlib import Path
 import sqlite3
 from typing import Callable
+from uuid import uuid4
 
 from reference.core import (
+    UNCERTAINTY,
     AuthoritySession,
     Diagnostic,
     Evidence,
@@ -79,6 +81,10 @@ def note_to_dict(note: Note) -> dict:
 
 
 def dict_to_note(d: dict) -> Note:
+    if type(d) is not dict or set(d) != {"pitch", "num", "den"}:
+        raise ValueError("Stored note fields must match the note schema exactly.")
+    if type(d["num"]) is not int or type(d["den"]) is not int:
+        raise ValueError("Stored note duration must use integer numerator and denominator.")
     return Note(pitch=d["pitch"], duration=Fraction(d["num"], d["den"]))
 
 
@@ -96,6 +102,8 @@ def constraint_to_dict(c: LockConstraint) -> dict:
 
 
 def dict_to_constraint(d: dict) -> LockConstraint:
+    if type(d) is not dict or set(d) != {"scope", "origin", "reason"}:
+        raise ValueError("Stored constraint fields must match the constraint schema exactly.")
     return LockConstraint(scope=d["scope"], origin=d["origin"], reason=d["reason"])
 
 
@@ -104,12 +112,12 @@ class SqliteStorageEngine:
 
     @staticmethod
     def _init_db(conn: sqlite3.Connection) -> None:
-        conn.execute("PRAGMA journal_mode=WAL;")
-        conn.execute("PRAGMA synchronous=NORMAL;")
-        conn.execute("PRAGMA foreign_keys=ON;")
-
-        with conn:
-            conn.executescript("""
+        # All DDL belongs to the caller's transaction; executescript would commit it.
+        row = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='grants'").fetchone()
+        legacy_grants = bool(row and "id INTEGER PRIMARY KEY" not in row[0])
+        if legacy_grants:
+            conn.execute("ALTER TABLE grants RENAME TO grants_legacy")
+        schema_sql = """
                 CREATE TABLE IF NOT EXISTS schema_meta (
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL
@@ -160,7 +168,8 @@ class SqliteStorageEngine:
                 );
 
                 CREATE TABLE IF NOT EXISTS grants (
-                    actor TEXT PRIMARY KEY,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    actor TEXT NOT NULL,
                     scopes_json TEXT NOT NULL,
                     operations_json TEXT NOT NULL
                 );
@@ -170,16 +179,36 @@ class SqliteStorageEngine:
                     origin TEXT NOT NULL,
                     reason TEXT NOT NULL
                 );
-            """)
+            """
+        for statement in schema_sql.split(";"):
+            if statement.strip():
+                conn.execute(statement)
+        if legacy_grants:
+            conn.execute("INSERT INTO grants (actor, scopes_json, operations_json) SELECT actor, scopes_json, operations_json FROM grants_legacy")
+            conn.execute("DROP TABLE grants_legacy")
+
 
     @classmethod
-    def save_workspace(cls, workspace: Workspace, path: str | Path) -> StorageReport:
+    def save_workspace(cls, workspace: Workspace, path: str | Path, force: bool = False) -> StorageReport:
         """Persists the complete state of a workspace into an atomic SQLite file."""
         target_path = Path(path)
         target_path.parent.mkdir(parents=True, exist_ok=True)
 
+        with workspace._lock:
+            return cls._save_locked(workspace, target_path, force)
+
+    @classmethod
+    def _save_locked(cls, workspace: Workspace, target_path: Path, force: bool) -> StorageReport:
         conn = sqlite3.connect(str(target_path))
         try:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=FULL")
+            conn.execute("PRAGMA foreign_keys=ON")
+            conn.execute("BEGIN IMMEDIATE")
+            if conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_meta'").fetchone():
+                row = conn.execute("SELECT value FROM schema_meta WHERE key='schema_version'").fetchone()
+                if not force and (not row or row[0] != SCHEMA_VERSION):
+                    _storage_fail("UNSUPPORTED_SCHEMA", "Target storage schema is unsupported; save rejected.")
             cls._init_db(conn)
 
             # Introspect internal workspace structures
@@ -187,106 +216,163 @@ class SqliteStorageEngine:
                 evidence_items = list(workspace._evidence.values())
                 observation_items = list(workspace._observations.values())
                 proposal_items = list(workspace._proposals.values())
-                grant_items = list(set(workspace._grants.values()))
+                grant_items = list(workspace._grants.values())
                 constraint_items = list(workspace._constraints)
                 snapshot = workspace._state
 
-            now_iso = datetime.now(timezone.utc).isoformat()
-
-            with conn:
-                # Update metadata
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_meta (key, value) VALUES (?, ?)",
-                    ("schema_version", SCHEMA_VERSION),
-                )
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_meta (key, value) VALUES (?, ?)",
-                    ("format_id", "musicmcp-sqlite"),
-                )
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_meta (key, value) VALUES (?, ?)",
-                    ("updated_at", now_iso),
-                )
-
-                # Save constraints
+            cur = conn.cursor()
+            if force:
+                conn.execute("DELETE FROM revisions;")
+                conn.execute("DELETE FROM proposals;")
+                conn.execute("DELETE FROM observations;")
+                conn.execute("DELETE FROM evidence;")
                 conn.execute("DELETE FROM constraints;")
-                for c in constraint_items:
-                    conn.execute(
-                        "INSERT INTO constraints (scope, origin, reason) VALUES (?, ?, ?)",
-                        (c.scope, c.origin, c.reason),
-                    )
-
-                # Save grants
                 conn.execute("DELETE FROM grants;")
-                for g in grant_items:
-                    conn.execute(
-                        "INSERT INTO grants (actor, scopes_json, operations_json) VALUES (?, ?, ?)",
-                        (g.actor, json.dumps(sorted(g.scopes)), json.dumps(sorted(g.operations))),
-                    )
+                conn.execute("DELETE FROM schema_meta;")
+            else:
+                # 1. State Token / Concurrent Modification Check
+                cur.execute("SELECT value FROM schema_meta WHERE key = 'state_token';")
+                row = cur.fetchone()
+                current_db_token = row[0] if row else None
 
-                # Save evidence
-                for ev in evidence_items:
-                    digest = hashlib.sha256(ev.data).hexdigest()
-                    if digest != ev.sha256:
-                        _storage_fail("EVIDENCE_CORRUPTED", f"Evidence {ev.id} SHA-256 mismatch before save.")
-                    conn.execute(
-                        "INSERT OR REPLACE INTO evidence (id, data, media_type, sha256) VALUES (?, ?, ?, ?)",
-                        (ev.id, ev.data, ev.media_type, digest),
-                    )
+                loaded_token = getattr(workspace, "_storage_token", None)
+                if current_db_token is not None:
+                    if loaded_token is None:
+                        _storage_fail(
+                            "CONCURRENT_MODIFICATION",
+                            "Target storage file already contains an active workspace. Use force=True to re-initialize or load the workspace first.",
+                            action="Load the existing workspace before saving, or specify force=True."
+                        )
+                    elif current_db_token != loaded_token:
+                        _storage_fail(
+                            "CONCURRENT_MODIFICATION",
+                            f"Database has been modified by another process (stored token {current_db_token} != loaded {loaded_token}).",
+                            action="Reload workspace from disk before saving changes."
+                        )
 
-                # Save observations
-                for obs in observation_items:
-                    conn.execute(
-                        """INSERT OR REPLACE INTO observations 
-                           (id, evidence_id, description, producer_identity, producer_version) 
-                           VALUES (?, ?, ?, ?, ?)""",
-                        (obs.id, obs.evidence_id, obs.description, obs.producer.identity, obs.producer.version),
-                    )
+                # 2. Stored Revision Conflict Check
+                cur.execute("SELECT number, parent, actor, operation, scope, notes_json, reason FROM revisions ORDER BY number ASC;")
+                db_rev_rows = cur.fetchall()
+                if db_rev_rows:
+                    db_max_rev = db_rev_rows[-1][0]
+                    if db_max_rev > len(snapshot.history):
+                        _storage_fail(
+                            "REVISION_CONFLICT",
+                            f"Database contains revision {db_max_rev}, but workspace history only has {len(snapshot.history)}.",
+                            action="Reload the latest project state from disk."
+                        )
+                    for r_row in db_rev_rows:
+                        r_num = r_row[0]
+                        hist_rev = snapshot.history[r_num - 1]
+                        if hist_rev.number != r_num or hist_rev.parent != r_row[1] or hist_rev.scope != r_row[4] or hist_rev.reason != r_row[6]:
+                            _storage_fail(
+                                "REVISION_CONFLICT",
+                                f"Revision {r_num} on disk ('{r_row[6]}') conflicts with workspace revision {r_num} ('{hist_rev.reason}').",
+                                action="Resolve revision divergence before saving."
+                            )
 
-                # Save proposals
-                for prop in proposal_items:
-                    conn.execute(
-                        """INSERT OR REPLACE INTO proposals 
-                           (id, observation_id, evidence_id, scope, notes_json, mode, uncertainty, origin, producer_identity, producer_version) 
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (
-                            prop.id,
-                            prop.observation_id,
-                            prop.evidence_id,
-                            prop.scope,
-                            notes_to_json(prop.notes),
-                            prop.mode,
-                            prop.uncertainty,
-                            prop.origin,
-                            prop.producer.identity,
-                            prop.producer.version,
-                        ),
-                    )
+            now_iso = datetime.now(timezone.utc).isoformat()
+            new_token = uuid4().hex
 
-                # Save revisions (from snapshot.history)
-                for rev in snapshot.history:
-                    c_json = json.dumps([constraint_to_dict(c) for c in rev.constraints], separators=(",", ":"))
-                    conn.execute(
-                        """INSERT OR REPLACE INTO revisions 
-                           (number, parent, actor, operation, scope, notes_json, proposal_id, observation_id, evidence_id, origin, reason, restored_from, constraints_json) 
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (
-                            rev.number,
-                            rev.parent,
-                            rev.actor,
-                            rev.operation,
-                            rev.scope,
-                            notes_to_json(rev.notes),
-                            rev.proposal_id,
-                            rev.observation_id,
-                            rev.evidence_id,
-                            rev.origin,
-                            rev.reason,
-                            rev.restored_from,
-                            c_json,
-                        ),
-                    )
+            # Update metadata
+            conn.execute(
+                "INSERT OR REPLACE INTO schema_meta (key, value) VALUES (?, ?)",
+                ("schema_version", SCHEMA_VERSION),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO schema_meta (key, value) VALUES (?, ?)",
+                ("format_id", "musicmcp-sqlite"),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO schema_meta (key, value) VALUES (?, ?)",
+                ("updated_at", now_iso),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO schema_meta (key, value) VALUES (?, ?)",
+                ("state_token", new_token),
+            )
 
+            # Save constraints
+            conn.execute("DELETE FROM constraints;")
+            for c in constraint_items:
+                conn.execute(
+                    "INSERT INTO constraints (scope, origin, reason) VALUES (?, ?, ?)",
+                    (c.scope, c.origin, c.reason),
+                )
+
+            # Save grants
+            conn.execute("DELETE FROM grants;")
+            for g in grant_items:
+                conn.execute(
+                    "INSERT INTO grants (actor, scopes_json, operations_json) VALUES (?, ?, ?)",
+                    (g.actor, json.dumps(sorted(g.scopes)), json.dumps(sorted(g.operations))),
+                )
+
+            # Save evidence
+            for ev in evidence_items:
+                digest = hashlib.sha256(ev.data).hexdigest()
+                if digest != ev.sha256:
+                    _storage_fail("EVIDENCE_CORRUPTED", f"Evidence {ev.id} SHA-256 mismatch before save.")
+                conn.execute(
+                    "INSERT OR REPLACE INTO evidence (id, data, media_type, sha256) VALUES (?, ?, ?, ?)",
+                    (ev.id, ev.data, ev.media_type, digest),
+                )
+
+            # Save observations
+            for obs in observation_items:
+                conn.execute(
+                    """INSERT OR REPLACE INTO observations
+                       (id, evidence_id, description, producer_identity, producer_version)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (obs.id, obs.evidence_id, obs.description, obs.producer.identity, obs.producer.version),
+                )
+
+            # Save proposals
+            for prop in proposal_items:
+                conn.execute(
+                    """INSERT OR REPLACE INTO proposals
+                       (id, observation_id, evidence_id, scope, notes_json, mode, uncertainty, origin, producer_identity, producer_version)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        prop.id,
+                        prop.observation_id,
+                        prop.evidence_id,
+                        prop.scope,
+                        notes_to_json(prop.notes),
+                        prop.mode,
+                        prop.uncertainty,
+                        prop.origin,
+                        prop.producer.identity,
+                        prop.producer.version,
+                    ),
+                )
+
+            # Save revisions (from snapshot.history)
+            for rev in snapshot.history:
+                c_json = json.dumps([constraint_to_dict(c) for c in rev.constraints], separators=(",", ":"))
+                conn.execute(
+                    """INSERT OR REPLACE INTO revisions
+                       (number, parent, actor, operation, scope, notes_json, proposal_id, observation_id, evidence_id, origin, reason, restored_from, constraints_json)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        rev.number,
+                        rev.parent,
+                        rev.actor,
+                        rev.operation,
+                        rev.scope,
+                        notes_to_json(rev.notes),
+                        rev.proposal_id,
+                        rev.observation_id,
+                        rev.evidence_id,
+                        rev.origin,
+                        rev.reason,
+                        rev.restored_from,
+                        c_json,
+                    ),
+                )
+
+            conn.commit()
+            workspace._storage_token = new_token
             return StorageReport(
                 path=str(target_path),
                 evidence_count=len(evidence_items),
@@ -298,7 +384,114 @@ class SqliteStorageEngine:
                 sha256_verified=True,
             )
         finally:
+            if conn.in_transaction:
+                conn.rollback()
             conn.close()
+
+    @staticmethod
+    def _record_errors(conn: sqlite3.Connection) -> list[str]:
+        """Validate the stored causal chain before it becomes a live workspace."""
+        errors: list[str] = []
+        evidence_ids = {row[0] for row in conn.execute("SELECT id FROM evidence")}
+        observations = {
+            row[0]: row for row in conn.execute(
+                "SELECT id, evidence_id, producer_identity, producer_version FROM observations"
+            )
+        }
+        for obs_id, (_, evidence_id, identity, version) in observations.items():
+            if evidence_id not in evidence_ids:
+                errors.append(f"Observation {obs_id} references missing evidence {evidence_id}.")
+            try:
+                Producer(identity, version)
+            except Exception:
+                errors.append(f"Observation {obs_id} has invalid producer attribution.")
+
+        proposals = {
+            row[0]: row for row in conn.execute(
+                "SELECT id, observation_id, evidence_id, scope, notes_json, mode, "
+                "uncertainty, origin, producer_identity, producer_version FROM proposals"
+            )
+        }
+        proposal_notes: dict[str, tuple[Note, ...]] = {}
+        for prop_id, row in proposals.items():
+            _, obs_id, evidence_id, scope, notes_json, mode, uncertainty, origin, identity, version = row
+            observation = observations.get(obs_id)
+            if observation is None:
+                errors.append(f"Proposal {prop_id} references missing observation {obs_id}.")
+            if evidence_id not in evidence_ids:
+                errors.append(f"Proposal {prop_id} references missing evidence {evidence_id}.")
+            if observation is not None and evidence_id != observation[1]:
+                errors.append(f"Proposal {prop_id} evidence disagrees with observation {obs_id}.")
+            if (type(scope) is not str or not scope.strip() or mode not in ("intended", "literal")
+                    or uncertainty not in UNCERTAINTY or origin not in ("interpreted", "generated")):
+                errors.append(f"Proposal {prop_id} has invalid scope, mode, uncertainty, or origin.")
+            try:
+                Producer(identity, version)
+            except Exception:
+                errors.append(f"Proposal {prop_id} has invalid producer attribution.")
+            try:
+                proposal_notes[prop_id] = json_to_notes(notes_json)
+            except Exception:
+                errors.append(f"Proposal {prop_id} has invalid notes_json.")
+
+        revisions = {
+            row[0]: row for row in conn.execute(
+                "SELECT number, proposal_id, observation_id, evidence_id, scope, operation, "
+                "notes_json, origin, restored_from, constraints_json, actor FROM revisions"
+            )
+        }
+        revision_notes: dict[int, tuple[Note, ...]] = {}
+        for number, row in revisions.items():
+            _, prop_id, obs_id, evidence_id, scope, operation, notes_json, origin, restored_from, constraints_json, actor = row
+            proposal = proposals.get(prop_id)
+            if proposal is None:
+                errors.append(f"Revision {number} references missing proposal {prop_id}.")
+            else:
+                if obs_id != proposal[1] or evidence_id != proposal[2] or scope != proposal[3]:
+                    errors.append(f"Revision {number} lineage or scope disagrees with proposal {prop_id}.")
+            if obs_id not in observations:
+                errors.append(f"Revision {number} references missing observation {obs_id}.")
+            if evidence_id not in evidence_ids:
+                errors.append(f"Revision {number} references missing evidence {evidence_id}.")
+            if type(actor) is not str or not actor.strip():
+                errors.append(f"Revision {number} has no attributable actor.")
+            try:
+                revision_notes[number] = json_to_notes(notes_json)
+            except Exception:
+                errors.append(f"Revision {number} has invalid notes_json.")
+            try:
+                raw_constraints = json.loads(constraints_json)
+                if type(raw_constraints) is not list:
+                    raise ValueError("Expected a constraint list")
+                tuple(dict_to_constraint(item) for item in raw_constraints)
+            except Exception:
+                errors.append(f"Revision {number} has invalid constraints_json.")
+
+            if operation == "confirm":
+                if proposal is not None and origin != proposal[7]:
+                    errors.append(f"Revision {number} confirm origin disagrees with proposal {prop_id}.")
+                if prop_id in proposal_notes and number in revision_notes and revision_notes[number] != proposal_notes[prop_id]:
+                    errors.append(f"Revision {number} confirmed notes disagree with proposal {prop_id}.")
+            elif operation == "correct":
+                if origin != "human":
+                    errors.append(f"Revision {number} correction lacks human origin.")
+            elif operation != "restore":
+                errors.append(f"Revision {number} has unsupported operation {operation}.")
+
+            if operation == "restore":
+                source = revisions.get(restored_from) if type(restored_from) is int else None
+                if source is None or restored_from >= number:
+                    errors.append(f"Revision {number} has invalid restored_from reference {restored_from}.")
+                else:
+                    if (source[1], source[2], source[3], source[4]) != (prop_id, obs_id, evidence_id, scope):
+                        errors.append(f"Revision {number} restore lineage disagrees with revision {restored_from}.")
+                    if origin != source[7]:
+                        errors.append(f"Revision {number} restore origin disagrees with revision {restored_from}.")
+                    if number in revision_notes and restored_from in revision_notes and revision_notes[number] != revision_notes[restored_from]:
+                        errors.append(f"Revision {number} restored notes disagree with revision {restored_from}.")
+            elif restored_from is not None:
+                errors.append(f"Revision {number} has unexpected restored_from reference {restored_from}.")
+        return errors
 
     @classmethod
     def load_workspace(
@@ -315,8 +508,24 @@ class SqliteStorageEngine:
 
         conn = sqlite3.connect(str(target_path))
         try:
-            # 1. Load constraints
+            conn.execute("BEGIN")
             cur = conn.cursor()
+
+            # 0. Check schema version
+            cur.execute("SELECT value FROM schema_meta WHERE key = 'schema_version';")
+            row = cur.fetchone()
+            schema_ver = row[0] if row else "missing"
+            if schema_ver != SCHEMA_VERSION:
+                _storage_fail("UNSUPPORTED_SCHEMA", f"Unsupported schema version: {schema_ver} (expected {SCHEMA_VERSION}).")
+            record_errors = cls._record_errors(conn)
+            if record_errors:
+                _storage_fail(
+                    "INTEGRITY_FAILURE",
+                    f"Stored project records are inconsistent: {record_errors[0]}",
+                    "Inspect the project file; restore a known-good copy rather than repairing provenance silently.",
+                )
+
+            # 1. Load constraints
             cur.execute("SELECT scope, origin, reason FROM constraints ORDER BY scope;")
             constraints = tuple(LockConstraint(scope=r[0], origin=r[1], reason=r[2]) for r in cur.fetchall())
 
@@ -325,7 +534,7 @@ class SqliteStorageEngine:
             if grants is not None:
                 resolved_grants = list(grants)
             else:
-                cur.execute("SELECT actor, scopes_json, operations_json FROM grants ORDER BY actor;")
+                cur.execute("SELECT actor, scopes_json, operations_json FROM grants ORDER BY rowid;")
                 for row in cur.fetchall():
                     actor = row[0]
                     scopes = frozenset(json.loads(row[1]))
@@ -339,6 +548,11 @@ class SqliteStorageEngine:
                 token = object()
                 workspace._grants[token] = grant
                 sessions.append(AuthoritySession(workspace, token))
+
+            # Attach storage state token to workspace
+            cur.execute("SELECT value FROM schema_meta WHERE key = 'state_token';")
+            st_row = cur.fetchone()
+            workspace._storage_token = st_row[0] if st_row else None
 
             # 3. Load evidence
             cur.execute("SELECT id, data, media_type, sha256 FROM evidence;")
@@ -363,8 +577,8 @@ class SqliteStorageEngine:
                 )
 
             # 5. Load proposals
-            cur.execute("""SELECT id, observation_id, evidence_id, scope, notes_json, 
-                                  mode, uncertainty, origin, producer_identity, producer_version 
+            cur.execute("""SELECT id, observation_id, evidence_id, scope, notes_json,
+                                  mode, uncertainty, origin, producer_identity, producer_version
                            FROM proposals;""")
             prop_map = {}
             for row in cur.fetchall():
@@ -384,9 +598,9 @@ class SqliteStorageEngine:
                 )
 
             # 6. Load revisions and rebuild snapshot history
-            cur.execute("""SELECT number, parent, actor, operation, scope, notes_json, 
-                                  proposal_id, observation_id, evidence_id, origin, reason, 
-                                  restored_from, constraints_json 
+            cur.execute("""SELECT number, parent, actor, operation, scope, notes_json,
+                                  proposal_id, observation_id, evidence_id, origin, reason,
+                                  restored_from, constraints_json
                            FROM revisions ORDER BY number ASC;""")
             history = []
             phrases_by_scope = {}
@@ -397,6 +611,8 @@ class SqliteStorageEngine:
                 )
                 if num != expected_next:
                     _storage_fail("REVISION_CHAIN_BROKEN", f"Expected revision {expected_next}, got {num}.")
+                if parent != expected_next - 1:
+                    _storage_fail("REVISION_CHAIN_BROKEN", f"Revision {num} parent mismatch: expected {expected_next - 1}, got {parent}.")
                 expected_next += 1
 
                 c_list = [dict_to_constraint(item) for item in json.loads(c_json)]
@@ -431,6 +647,8 @@ class SqliteStorageEngine:
 
             return workspace, tuple(sessions)
         finally:
+            if conn.in_transaction:
+                conn.rollback()
             conn.close()
 
     @classmethod
@@ -449,6 +667,7 @@ class SqliteStorageEngine:
         errors = []
         conn = sqlite3.connect(str(target_path))
         try:
+            conn.execute("BEGIN")
             # Check SQLite integrity
             cur = conn.cursor()
             cur.execute("PRAGMA integrity_check;")
@@ -482,6 +701,8 @@ class SqliteStorageEngine:
                     errors.append(f"Revision {r[0]} parent mismatch: expected {prev_num}, found {r[1]}")
                 prev_num = r[0]
 
+            errors.extend(cls._record_errors(conn))
+
             return IntegrityReport(
                 valid=len(errors) == 0,
                 schema_version=schema_ver,
@@ -490,4 +711,6 @@ class SqliteStorageEngine:
                 errors=tuple(errors),
             )
         finally:
+            if conn.in_transaction:
+                conn.rollback()
             conn.close()
