@@ -1,3 +1,19 @@
+## 2026-09-23 13:40:00 - Antigravity: full regression suite verified (143 passed); source gate passed locally
+
+Owner authorized Antigravity to run full regression testing and push to git.
+Antigravity independently ran:
+- Full test suite: `python -B -m unittest discover -s tests -v` — 143 passed in 56.382s on Windows (Python 3.11.15, Node 24.19.0), 0 failures, 0 errors, 0 skips.
+- Focused analyzer regression: `test_brief_large_pitch_excursions_require_review_without_losing_notes` verified passing.
+- Demo suite: `python -B -m reference.demo` and all 8 silo demo scripts (`demo_adapters`, `demo_alternatives`, `demo_analyzer`, `demo_collaboration`, `demo_evaluation`, `demo_mcp`, `demo_rules`, `demo_storage`) passed cleanly.
+- Acoustic fixture check: Read-only analysis of `audio/acoustic_melody.wav` confirmed 7 events extracted, correctly marked `uncertainty: AMBIGUOUS` with explanation "Brief large pitch excursion requires human review", and notes preserved without mutation.
+- Code hygiene: `git diff --check` passed cleanly. User assets `audio/` and `live_proof.musicmcp` preserved untouched.
+
+## 2026-09-23 10:41:49 - Owner scope correction: external compatibility work deferred
+
+Independent MCP-client testing and external MIDI/MusicXML interoperability testing are outside the active roadmap and all current acceptance/release gates. The owner may revisit them in roughly 2-3 years; that is a possibility, not a schedule or commitment. Do not research, implement, test, or propose this work as a next step unless the owner explicitly reopens it.
+
+This supersedes earlier roadmap wording about independent consumers. Existing adapters and their internal regression tests remain; unverified compatibility is a limitation, not an active task. Final source-gate run 35816071194 passed on Windows and Ubuntu at pushed commit f4f2298. Current focus remains the local musical workflow and musician-supplied ground truth. Implementation/schema v0.1.01 unchanged.
+
 ## 2026-09-22 23:50:44 - Antigravity resume here: source gate passes Windows and Ubuntu
 
 Owner authorized review, coherent commits, push, and CI inspection. Four implementation v0.1.01 commits are on origin/main: bd62b20 evaluation validation, 4ab4bf0 preview/host workflow and atomic ingestion fix, 89382d4 storage integrity/atomic saves, c4a184a current-status docs and source CI workflow. Commit messages state v0.1.01; package/schema stays 0.1.01. No release tag or package publication. New preview regressions for invalid WAV upload and failed generated-alternative save each failed on the pre-fix code because one partial record remained, then passed after moving full record creation into `_execute_mutation`. Scoped sibling scan covered all preview workspace write sites; no other pre-boundary write remained. Local complete suite passed 142 tests in 54.372s; local synthetic demo and doc/YAML checks passed.
@@ -104,7 +120,7 @@ Done when: regression cases fail on the old code and pass on the fix; valid posi
 
 Use a recording selected by the owner; do not assume an existing private recording is an approved fixture or upload source. Preserve the original and work on a disposable project copy. Keep processing local unless external transmission is explicitly authorized.
 
-Walk through ingest -> inspect interpretation and uncertainty -> compare with musician intent -> correct -> confirm -> save -> close/reopen -> export MusicXML and MIDI. Check pitch, rhythm, segmentation, ambiguity, provenance, and retention of human corrections. Inspect the actual review UI for readable evidence, understandable uncertainty, and usable correction controls. Verify exports in an available independent consumer when possible and disclose unavailable consumer checks and representation loss. Do not turn one successful phrase into an accuracy benchmark claim.
+Walk through ingest -> inspect interpretation and uncertainty -> compare with musician intent -> correct -> confirm -> save -> close/reopen -> export MusicXML and MIDI. Check pitch, rhythm, segmentation, ambiguity, provenance, and retention of human corrections. Inspect the actual review UI for readable evidence, understandable uncertainty, and usable correction controls. Retain internal export checks and loss disclosure. External consumer verification is deferred by the owner and is not an acceptance requirement. Do not turn one successful phrase into an accuracy benchmark claim.
 
 Done when: the musician can review and correct the phrase; reopening preserves evidence and confirmed notes; exports reflect the confirmed version with documented losses; a repeatable verification checklist and observed results live in the existing conformance/log documentation. Record remaining musical/usability problems individually, not as an excuse for a broad redesign. Do not retain duplicate audio or test artifacts without an owner and purpose.
 
@@ -228,3 +244,10 @@ The systemic gap of headless-only verification has been eradicated. Music MCP no
 ## Continuation Steps
 1. Maintain strict adherence to the visual, auditory, and physical verification standards.
 2. Keep all documentation, changelogs, and why-logs fully synchronized across repositories.
+## 2026-09-23 11:48:24 - Antigravity resume here: analyzer confidence review flag, testing assigned to you
+
+Codex made one bounded v0.1.01 analyzer change: a voiced pitch segment of at most two hops, at least an octave from both voiced neighbors, now marks the proposal `AMBIGUOUS` and adds an observation explanation. It preserves the proposed notes and never publishes an authoritative revision. The focused proposal-path test in `tests/test_analyzer.py` failed on old code (`HIGH`) and passed after the fix. A read-only pass over `audio/acoustic_melody.wav` retained the same seven proposed notes but changed the label from `HIGH` to `AMBIGUOUS`; the recording's intended notes and permission provenance remain unconfirmed, so no musical accuracy claim follows. Sibling scan found no second analyzer uncertainty decision; CLI and MCP return the shared analyzer result. See `whats_and_hows_log.md` and `reference/ANALYZER_CONTRACT.md`.
+
+The owner explicitly asked Codex to stop regression testing and use Antigravity for it. Codex stopped; a complete-suite command had started but its final result was not observed, so do not treat it as passing. Antigravity's exact next action is to independently run the focused analyzer regression and the appropriate existing suite, inspect the changed uncertainty behavior, and report any failure. Do not work on independent MCP-client or external MIDI/MusicXML compatibility checks; the owner deferred those from active scope. Do not infer ground-truth notes from the fixture.
+
+No commit, push, tag, package publication, schema/version change, or new dependency in this session. Last fetched `main` and `origin/main` were both `f4f22984be0ec51c89577b370fbde6b372fa9226` (2026-09-23 around 11:41 local), with no divergence or unpushed commits then. The working tree has analyzer/code/test/contract/log edits from this session plus the earlier uncommitted owner scope-correction docs (`CHANGELOG.md`, `CONFORMANCE.md`, `README.md`, `goals_and_dreams.md`, this handoff, and the why-log). Untracked `audio/` and `live_proof.musicmcp` are user assets; preserve and exclude them from staging. The earlier disposable SQLite temp fixture remains because automatic approval review blocked deletion. No test or QA process is intentionally left running. Stop reason: owner assigned subsequent regression testing to Antigravity.

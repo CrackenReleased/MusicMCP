@@ -4,6 +4,8 @@ Idea vault · 2026-09-18
 
 > Nothing in this file is a commitment. Nothing valuable gets forgotten.
 
+Owner scope correction (2026-09-23): Independent MCP-client testing and external MIDI/MusicXML interoperability testing are outside the active roadmap and all current acceptance/release gates. The owner may revisit them in roughly 2-3 years; that is a possibility, not a schedule or commitment. Do not research, implement, test, or propose this work as a next step unless the owner explicitly reopens it.
+
 These ideas originate in the founding directive. The declared package/schema version remains experimental v0.1.01. Several ideas below now have bounded reference implementations and contracts (monophonic analysis, stdio gateway, format adapters, local storage, collaboration, rules, alternatives, and evaluation). Their broader product aims and evidence gates remain open; a listing here does not authorize scope expansion. See [current status](README.md) and [conformance limits](CONFORMANCE.md).
 
 | Idea | Why it matters | Evidence needed before promotion |

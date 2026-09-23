@@ -1,6 +1,7 @@
 """Conformance tests for the monophonic audio analyzer silo."""
 from fractions import Fraction
 import unittest
+from unittest.mock import patch
 
 from reference.analyzer import (
     ANALYZER_PRODUCER,
@@ -62,6 +63,24 @@ class MonophonicAnalyzerConformance(unittest.TestCase):
 
         self.assertIn(result.uncertainty, ('AMBIGUOUS', 'MEDIUM'))
         self.assertEqual(result.producer, ANALYZER_PRODUCER)
+
+    def test_brief_large_pitch_excursions_require_review_without_losing_notes(self):
+        # Isolate the uncertainty decision from pitch-detection accuracy.
+        pitches = ['C4'] * 8 + ['C#8'] + ['E4'] * 8 + ['C3'] + ['G4'] * 20
+        detected = iter(pitches)
+        grant = Grant('test-host', frozenset({'melody'}), frozenset({'confirm'}))
+        workspace, _ = create_workspace([grant])
+        evidence = workspace.add_evidence(make_wav([(261.63, 0.6)], sample_rate=8000), 'audio/wav')
+
+        with patch('reference.analyzer.freq_to_pitch',
+                   side_effect=lambda _f0, _tuning: (next(detected), 0.0)):
+            observation, proposal = ingest_and_propose(workspace, evidence.id, 'melody')
+
+        self.assertEqual(proposal.uncertainty, 'AMBIGUOUS')
+        self.assertIn('Brief large pitch excursion requires human review', observation.description)
+        self.assertIn('C#8', [note.pitch for note in proposal.notes])
+        self.assertIn('C3', [note.pitch for note in proposal.notes])
+        self.assertEqual(workspace.snapshot().revision, 0)
 
     def test_silence_audio_classified_as_insufficient_evidence(self):
         audio = make_silence_wav(duration=0.5)

@@ -50,20 +50,20 @@ The watcher evaluates each audio buffer for non-musical signal anomalies:
 
 ## Signal processing and feature extraction
 
-1. **RMS Energy & Voicing:** Frames of 20–40ms (default 1024 samples at 44.1kHz with 50% overlap) are evaluated for root-mean-square amplitude. Frames below the silence threshold (default 0.012 relative amplitude) are classified as unvoiced / silence.
-2. **Fundamental Frequency ($f_0$):** Voiced frames are analyzed using normalized square-difference autocorrelation over the pitch range 27.5 Hz (A0) to 4186 Hz (C8).
+1. **RMS Energy & Voicing:** Frames use an 80ms window (or the whole clip if shorter) and a 20ms hop, subject to minimum window/hop sizes of 512/128 samples. Frames below 0.012 RMS are classified as unvoiced / silence.
+2. **Fundamental Frequency ($f_0$):** Voiced frames use raw autocorrelation over approximately 27.5 Hz (A0) to 4186 Hz (C8); correlation below 0.40 of frame energy is unvoiced.
 3. **Symbolic Pitch Mapping:** Continuous $f_0$ values are mapped to 12-tone equal temperament (12-TET) relative to `tuning_a4` (default 440.0 Hz). Pitch spellings use uppercase note names (`A` through `G`), optional single sharp `#` or flat `b`, and octave number `0` through `9`, matching the reference symbolic profile in [CONTRACT.md](CONTRACT.md). Frequencies outside musical octaves 0–9 map to `'rest'`.
-4. **Note Segmentation & Quantization:** Contiguous voiced frames with consistent pitch (within 50 cents) are merged into symbolic `Note` events. Durations are calculated from frame counts and sample rate, then quantized to exact positive `fractions.Fraction` quarter-note units based on `tempo_bpm`. Durations smaller than 1/16 quarter note are clamped or rejected. Contiguous silent intervals are represented as `Note(pitch="rest", duration=Fraction(...))`.
+4. **Note Segmentation & Quantization:** Contiguous frames with the same mapped pitch are merged into symbolic `Note` events. Durations are calculated from hop counts and sample rate, then quantized to exact positive `fractions.Fraction` quarter-note units based on `tempo_bpm`. The smallest grid duration is 1/16 quarter note. Silent segments shorter than 40ms are omitted when other segments exist; longer segments become rests.
 
 ## Qualitative uncertainty classification
 
 Every proposal assigns an explicit uncertainty label from the six recognized constitutional categories:
-- **`HIGH`:** Clear periodicity, strong harmonic energy, pitch deviation < 20 cents, stable duration, clean spectrum.
-- **`MEDIUM`:** Moderate harmonic clarity, slight pitch deviation (20–40 cents), minor timing jitter, or non-critical spectral anomalies.
-- **`LOW`:** Weak harmonic correlation, high noise ratio, or duration near segmentation boundaries.
-- **`AMBIGUOUS`:** Vibrato modulation exceeding ±35 cents, expressive pitch slides, or critical non-musical anomalies (`CLIPPING`, severe `DC_OFFSET`, `CLICK_DISCONTINUITY`).
+- **`HIGH`:** Strong mean frame correlation (at least 0.80), cents standard deviation at most 20, no watcher anomalies, and no brief large pitch excursion.
+- **`MEDIUM`:** Mean frame correlation from 0.60 to below 0.80, cents standard deviation above 20 to at most 35, or non-critical watcher anomalies, absent a stronger ambiguity condition.
+- **`LOW`:** Mean frame correlation below 0.60, absent a stronger ambiguity condition.
+- **`AMBIGUOUS`:** Cents standard deviation above 35, critical non-musical anomalies, or a voiced pitch segment lasting at most two hops (about 40ms) that jumps at least an octave from both voiced neighbors. The excursion remains in the proposed notes and is named in the observation description for human review; this label does not prove the pitch is wrong.
 - **`INSUFFICIENT_EVIDENCE`:** Audio payload contains exclusively silence, ambient background noise, or unvoiced breath below the energy threshold.
-- **`UNRESOLVED`:** Signal analysis encountered conflicting transient markers or contradictory framing.
+- **`UNRESOLVED`:** Recognized by the shared profile but not emitted by this analyzer.
 
 Per [../SPECIFICATION.md](../SPECIFICATION.md), uncertainty describes the producer's assessment. No label confers permission or enables automated selection without human review.
 

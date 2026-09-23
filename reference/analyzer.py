@@ -44,6 +44,13 @@ def freq_to_pitch(f0: float, tuning_a4: float = 440.0) -> tuple[str, float]:
     pitch_str = f'{NOTE_NAMES[note_idx]}{octave}'
     return pitch_str, cents
 
+
+def _pitch_number(pitch: str) -> int | None:
+    if pitch == 'rest':
+        return None
+    return 12 * (int(pitch[-1]) + 1) + NOTE_NAMES.index(pitch[:-1])
+
+
 def quantize_duration(seconds: float, tempo_bpm: int) -> Fraction:
     """Convert duration in seconds to nearest exact Fraction in quarter-note units."""
     quarter_seconds = 60.0 / float(tempo_bpm)
@@ -216,6 +223,21 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
 
     validated_notes = phrase(notes_list)
 
+    # A very short octave-sized jump between two other pitches needs human review,
+    # even if each individual frame has strong autocorrelation. Keep the notes.
+    brief_large_excursion = False
+    for previous, current, following in zip(segments, segments[1:], segments[2:]):
+        previous_pitch = _pitch_number(previous[0])
+        current_pitch = _pitch_number(current[0])
+        following_pitch = _pitch_number(following[0])
+        if (previous_pitch is not None and current_pitch is not None
+                and following_pitch is not None
+                and current[1] <= 2 * hop_len / float(rate) + 1e-9
+                and abs(current_pitch - previous_pitch) >= 12
+                and abs(current_pitch - following_pitch) >= 12):
+            brief_large_excursion = True
+            break
+
     # Determine uncertainty with spectral watcher inputs
     voiced_frame_count = sum(1 for v in frames_voiced if v)
 
@@ -223,6 +245,8 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
         uncertainty = 'INSUFFICIENT_EVIDENCE'
     elif any(a.severity == 'CRITICAL' for a in spectrum_report.anomalies):
         # Critical anomalies (clipping, DC offset, clicks) compromise certainty
+        uncertainty = 'AMBIGUOUS'
+    elif brief_large_excursion:
         uncertainty = 'AMBIGUOUS'
     else:
         mean_cents = sum(all_voiced_cents) / float(len(all_voiced_cents))
@@ -243,6 +267,8 @@ def analyze_monophonic_wav(data: bytes, *, tempo_bpm: int = 120, tuning_a4: floa
         f'Monophonic analysis ({len(validated_notes)} events, {total_duration:.2f}s, {tempo_bpm} BPM, uncertainty: {uncertainty})',
         spectrum_report.summary
     ]
+    if brief_large_excursion:
+        desc_parts.append('Brief large pitch excursion requires human review')
     desc = ' | '.join(desc_parts)
 
     return AnalysisResult(

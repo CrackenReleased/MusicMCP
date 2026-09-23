@@ -12,6 +12,8 @@ Observations and proposals require their own producer identity/version. Locks re
 
 The source build uses Python 3.11+ and no third-party runtime dependencies. It includes local SQLite `.musicmcp` persistence, bounded monophonic PCM WAV analysis, spectral inspection, MusicXML/MIDI adapters with loss reporting, CLI commands, and a browser review preview with staff drawing and Web Audio playback. The real-recording walkthrough verified a mechanical review/reopen/export path; source provenance, intended notes, musical accuracy, independent consumer interoperability, hardware power-loss durability, and live provider compatibility remain unverified.
 
+Independent MCP-client and external MIDI/MusicXML interoperability work is deferred indefinitely from active priorities and gates. A possible revisit in roughly 2-3 years requires an explicit owner decision; existing compatibility limitations are not a near-term backlog.
+
 ## Run it
 
 From this repository using Python 3.11 or later, with no installation or external dependencies:

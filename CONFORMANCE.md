@@ -2,7 +2,7 @@
 
 Run from the repository root with Python 3.11+: `python -B -m unittest discover -s tests -v`. No dependencies, recordings, secrets, network access, or application installations are required. The synthetic demo is also independently runnable with `python -B -m reference.demo`.
 
-The suite exercises the in-memory phrase profile and separate reference modules for audio analysis, evaluation, stdio transport, format adapters, SQLite storage, CLI, and local preview. The latest complete run on this working tree passed 142 tests (2026-09-22). That establishes the tested reference behaviors, including local storage reopen and process interruption; it does not establish independent MCP-client compatibility, production security, hardware power-loss durability, transcription quality, independent format interoperability, live provider compatibility, or a third-party conformance standard.
+The suite exercises the in-memory phrase profile and separate reference modules for audio analysis, evaluation, stdio transport, format adapters, SQLite storage, CLI, and local preview. The complete suite executed by Antigravity on Windows (Python 3.11.15, Node 24.19.0) passed all 143 tests in 56.382s with zero failures, errors, or skips (`python -B -m unittest discover -s tests -v`), confirming the 2026-09-23 analyzer uncertainty change alongside all existing reference silos. The earlier suite establishes the tested reference behaviors, including local storage reopen and process interruption; it does not establish independent MCP-client compatibility, production security, hardware power-loss durability, transcription quality, independent format interoperability, live provider compatibility, or a third-party conformance standard.
 
 ## Source release gate
 
@@ -37,11 +37,11 @@ The shared rejection helper asserts snapshot equality, safe unchanged authoritat
 
 Host consent presentation is a normative integration obligation. The separate preview supplies a local review UI, but neither it nor this suite establishes human identity, independently proves what a person saw, or certifies that consent was obtained. Tests check core grants, revision preconditions, publication boundaries, and scoped preview behavior; any production host must add its own authenticated consent and stale-retry evidence before claiming that conformance.
 
-## Additional conformance still needed
+## Active conformance limits and deferred work
 
 Audio analysis has synthetic fixtures and a mechanical local recording walkthrough, but still needs provenance-cleared recordings with intended-note ground truth covering vibrato, pitch drift, deliberately inaccurate singing, literal transcription, rubato, breath, ornaments, ambiguous rhythm, enharmonics, pickups, and model disagreement. Current tests do not establish detection accuracy for those phenomena.
 
-Adapters have internal loss/round-trip tests but need independent consumers and broader unsupported-conversion fixtures. SQLite storage has conflict, corruption, rollback, and process-interruption tests, but no hardware power-loss certification or comprehensive backup/restore validation. Transposition still needs range-consequence tests without unauthorized revoicing. The experimental stdio transport needs independent MCP-client interoperability evidence; any remote transport needs authentication, privilege separation, invalid wire data, approval binding, and replay tests. Each implementation must name the exact contract/profile/version it passes; unimplemented tests cannot be silently counted as passing.
+Adapters retain internal loss/round-trip tests. Independent consumer checks are deferred by the owner, outside current acceptance/release gates; unsupported-conversion coverage may still be improved within the local implementation. SQLite storage has conflict, corruption, rollback, and process-interruption tests, but no hardware power-loss certification or comprehensive backup/restore validation. Transposition still needs range-consequence tests without unauthorized revoicing. Independent MCP-client interoperability testing is also deferred, not a current requirement. Any future remote transport would need separately scoped authentication, privilege separation, invalid wire data, approval binding, and replay tests. Each implementation must name the exact contract/profile/version it passes; unimplemented tests cannot be silently counted as passing.
 
 
 ## Local recording review checklist (added 2026-09-21 19:29:35)
@@ -52,10 +52,14 @@ Run on a fresh disposable project under the repository, never on a user's origin
 2. Serve only that project on an unused loopback port. Inspect the actual proposal staff, text, spectrum and uncertainty; record rendering/console problems. Do not infer musical intent from a generated proposal.
 3. For workflow testing, use explicit QA-only reasons when confirming/correcting. Verify draft survives Refresh, revision increments once per action, and AMS/history distinguish the correction from the original proposal. A test correction is not a musician-approved transcription.
 4. Stop the server and reopen storage in a fresh process. Assert exact corrected notes/durations, both history entries, unchanged evidence bytes and storage integrity.
-5. Export MusicXML/MIDI. Compare internal import results with confirmed QA notes; inspect in an independent consumer when available. Record representation loss and distinguish internal round trip from independent interoperability.
+5. Export MusicXML/MIDI and compare internal import results with confirmed QA notes. Record representation loss. External consumer checks are outside this checklist and the active roadmap; internal round trips do not establish external interoperability.
 6. Verify original hashes unchanged. Stop only the server started for this check, close QA tabs, remove only owned disposable outputs, and record observed results in whats_and_hows_log.md. No whole-suite rerun is required for a read-only walkthrough unless a code fix follows.
 
-Latest execution: 2026-09-21 19:29:35, selected acoustic_melody.wav, mechanical flow passed through revision 2 and both export round trips. Real-performance provenance, intended transcription, audible assessment and independent consumer comparison remain open. See the matching why-log entry and error_history_log.md for three observed UI issues. Prior 136-test result remains the last suite run; no new suite run occurred here.
+Latest checklist execution: 2026-09-21 19:29:35, selected acoustic_melody.wav, mechanical flow passed through revision 2 and both internal export round trips. Real-performance provenance, intended transcription, and audible assessment remain open. Independent consumer comparison is deferred by the owner. See the matching why-log entry and error_history_log.md for the observed UI issues.
+
+## Brief pitch excursion review regression (2026-09-23)
+
+`tests.test_analyzer.MonophonicAnalyzerConformance.test_brief_large_pitch_excursions_require_review_without_losing_notes` feeds a deterministic voiced signal through the proposal path while isolating the mapped pitch sequence. It checks that two one-hop, octave-sized excursions produce an `AMBIGUOUS` proposal, remain in its notes, appear in the observation explanation, and leave the authoritative revision unchanged. The focused test failed on the old decision (`HIGH`) and passed after the change. The local acoustic fixture likewise retained its seven proposed notes while changing its label from `HIGH` to `AMBIGUOUS`; no intended-note ground truth is available, so this is a confidence review finding, not an accuracy result. The owner assigned further regression execution to Antigravity. Antigravity ran the complete regression suite on Windows: all 143 tests passed in 56.382s, with zero failures, errors, or skips. The synthetic core demo and all 8 silo demos also passed without error.
 
 
 ## Correction editor regression

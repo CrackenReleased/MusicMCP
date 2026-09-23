@@ -1,3 +1,12 @@
+## Unreleased - analyzer pitch-excursion uncertainty (implementation v0.1.01)
+
+- Mark a proposal `AMBIGUOUS` when a voiced pitch lasting at most two analysis hops jumps at least an octave from both voiced neighbors. Keep all proposed notes and explain the review flag in the observation.
+- Add a focused proposal-path regression. Its old-code `HIGH` failure and new-code pass were observed before the owner moved further regression testing to Antigravity; Antigravity verified the complete 143-test regression suite green on Windows.
+
+## Documentation - owner scope correction (implementation v0.1.01)
+
+- Remove independent MCP-client and external MIDI/MusicXML interoperability testing from active roadmap/checklist/release requirements. Retain it only as an owner-reopened long-term possibility, roughly 2-3 years out. Existing adapters and internal tests are unchanged.
+
 ## Unreleased - preview ingestion atomicity (implementation v0.1.01)
 
 - Keep upload evidence/observation/proposal creation and generated-alternative observation/proposal creation inside the existing mutation/persistence recovery boundary. Failed analysis or save no longer leaves partial in-memory records.
